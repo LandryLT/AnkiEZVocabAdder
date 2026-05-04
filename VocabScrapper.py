@@ -13,6 +13,16 @@ from re import match, findall
 import os
 from enum import Enum
 
+def oopsable(f):
+    def wrap(*args, **kwargs):
+        while True:
+            try:
+                return f(*args, **kwargs)
+            except VocabScrapper.Oops:
+                continue
+    return wrap
+
+
 class VocabScrapper():
     logger = logging.getLogger(__name__)
     class SelectMode(Enum):
@@ -21,15 +31,27 @@ class VocabScrapper():
         SELECT = 1
         ALL = 2
 
+    class Quit(Exception):
+        def __init__(self, *args):
+            super().__init__(*args)
+
+    class Oops(Exception):
+        def __init__(self, *args):
+            super().__init__(*args)
+
     def __init__(self):
         pass 
 
-    def decideManually(self, vocab_list: list[str], 
-                       autoselect_expression_mode: SelectMode = SelectMode.NONE, 
+    def searchVocabList(self, vocab_list: list[str], 
+                       autoselect_expression_mode: SelectMode = SelectMode.NONE,
+                       is_exact_match_autoselect: bool = None, 
                        autoselect_meaning_mode: SelectMode = SelectMode.NONE, 
-                       autoselect_sentence_mode: SelectMode = SelectMode.NONE):     
+                       autoselect_sentence_mode: SelectMode = SelectMode.NONE, 
+                       enable_word_sound_download: bool = True,
+                       auto_download_sounds: bool = None):     
         # Navigate through vocab list
-        selected_expr = self.selectExpressions(vocab_list, autoselect_expression_mode)
+        selected_expr = self.selectExpressions(vocab_list, autoselect_expression_mode, is_exact_match_autoselect)
+        selected_expr = self.downloadSounds(selected_expr, enable_word_sound_download, auto_download_sounds)
         selected_expr = self.selectMeanings(selected_expr, autoselect_meaning_mode)
         selected_expr = self.selectSentence(selected_expr, autoselect_sentence_mode)
         
@@ -38,8 +60,9 @@ class VocabScrapper():
         for expr in selected_expr:
             print(f'\n{bold(expr.expression)} - {expr.furigana}')
             for i, definition in enumerate(expr.meanings):
-                print(f'{i+1}. {definition["meaning"]}')
+                print(f'{i+1}. {definition.meaning}')
 
+    @oopsable
     def selectExpressions(self, vocab_list: list[str], mode: SelectMode = None, is_exact_match_autoselect: bool = False) -> list[JishoSearchResultElement]:
         # Auto-select expression mode
         clearConsole()
@@ -49,13 +72,14 @@ class VocabScrapper():
             print(f"\t{bold('1')}. First only")
             print(f"\t{bold('2')}. Select")
             print(f"\t{bold('3')}. All")
-            response = match(r'[1-3]', input(f'{grey("Select mode")} ({bold("1")}|{bold("2")}|{bold("3")}) {grey(": ")}'))
+            response = match(r'([1-3]|oops)', self._chackAbortResponse(f'{grey("Select mode")} ({bold("1")}|{bold("2")}|{bold("3")}) {grey(": ")}'))
             if response:
                 mode = self.SelectMode(int(response.group(0))-1)
                 self.logger.info(f"Auto-selecting expression mode is {mode.name}")
             # Auto-select exact match
             if mode == self.SelectMode.SELECT:
-                is_exact_match_autoselect = match(r'(?i:^y(es)?$)', input(f"\n{grey('Enable auto-selecting only exact matches ?')} ({bold('y')}|{bold('n')}) {grey(':')} ")) != None
+                response = self._chackAbortResponse(f"\n{grey('Enable auto-selecting only exact matches ?')} ({bold('y')}|{bold('n')}) {grey(':')} ")
+                is_exact_match_autoselect = match(r'(?i:^y(es)?$)', response) != None
                 self.logger.info(f"Auto-selecting exact matches is {'en' if is_exact_match_autoselect else 'dis'}abled")
         
         output = []
@@ -65,7 +89,10 @@ class VocabScrapper():
             word = word.replace('\r\n', "")
             clearConsole()
             print(f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(vocab_list)} search terms)")}\n')
+            print(italic(grey(f'Loading from jisho.org...')))
             jisho_results = self.jishoSearchTerm(word)
+            clearConsole()
+            print(f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(vocab_list)} search terms)")}\n')
             
             # No results
             if not jisho_results:
@@ -82,19 +109,46 @@ class VocabScrapper():
             
             # Too many results
             if len(jisho_results) > 10:
-                response = match(r'^\d+$', input(f'{len(jisho_results)} results, how many to display ? '))
+                response = self._chackAbortResponse(f'{len(jisho_results)} results, how many to display ? ')
+
+                response = match(r'^\d+$', )
                 num_of_choices = 10 if response == None else int(response.group(0))
                 jisho_results = jisho_results[:min(num_of_choices, len(jisho_results))]
 
 
             print(grey(f"Please select expressions to keep"))
-            self.promptForSelection(choices=[f"{bold(expr.expression)} ({expr.romaji}):\t\"{italic(expr.meanings[0]['meaning'])}\" {grey(f'(1/{len(expr.meanings)} meanings)')}" for expr in jisho_results], 
+            self.promptForSelection(choices=[f"{bold(expr.expression)} ({expr.romaji}):\t\"{italic(expr.meanings[0].meaning)}\" {grey(f'(1/{len(expr.meanings)} meanings)')}" for expr in jisho_results], 
                                     input_text=grey("Expressions indices to keep ") + (f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')}) " if expression_question else "") + ": ",
                                     callback=lambda i: output.append(jisho_results[i]))
             
             expression_question = False
         return output
+    
+    @oopsable
+    def downloadSounds(self, selected_expr: list[JishoSearchResultElement], enable:bool = True, auto_download: bool = None):
+        output = selected_expr.copy()
+        expr_with_links = [expr for expr in output if expr.soundlink]
+        if not enable:
+            return output
+        clearConsole()
+        if not expr_with_links:
+            self.logger.info("No soundlinks found in selected expressions, skipping...")
+            return output
+        if auto_download == None:
+            auto_download = match(r'(?i:^y(es)?$)', self._chackAbortResponse(grey('\033[1mAuto-download sound\033[0m\033[2m when found ?') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None
+            self.logger.info(f"Auto-downloading sound is {'en' if auto_download else 'dis'}abled")
+        for i, expression in enumerate(expr_with_links):
+            clearConsole()
+            print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(expr_with_links)} sounds to download)")}\n')
+            if not auto_download and match(r'(?i:^y(es)?$)', self._chackAbortResponse(grey('Skip this file ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None:
+                continue
+            clearConsole()
+            print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(expr_with_links)} sounds to download)")}\n')
+            print(italic(grey(f'Downloading audio from jisho.org')))
+            expression.downloadSound()
+        return output
         
+    @oopsable
     def selectMeanings(self, selected_expr: list[JishoSearchResultElement], mode: SelectMode = SelectMode.SELECT) -> list[JishoSearchResultElement]:
         # Auto-select meanings mode
         while mode == self.SelectMode.NONE:
@@ -103,7 +157,7 @@ class VocabScrapper():
             print(f"\t{bold('1')}. First only")
             print(f"\t{bold('2')}. Select")
             print(f"\t{bold('3')}. All")
-            response = match(r'[1-3]', input(f'{grey("Select mode")} ({bold("1")}|{bold("2")}|{bold("3")}) {grey(": ")}'))
+            response = match(r'[1-3]', self._chackAbortResponse(f'{grey("Select mode")} ({bold("1")}|{bold("2")}|{bold("3")}) {grey(": ")}'))
             if response:
                 mode = self.SelectMode(int(response.group(0))-1)
                 self.logger.info(f"Auto-selecting definition mode is {mode.name}")
@@ -116,7 +170,7 @@ class VocabScrapper():
             if mode == self.SelectMode.SELECT and len(expression.meanings) > 1:
                 selected_def = []
                 print(grey(f"Please select meanings to keep"))
-                self.promptForSelection(choices=[f"{italic(m['meaning'])}" for m in expression.meanings], 
+                self.promptForSelection(choices=[f"{italic(m.meaning)}" for m in expression.meanings], 
                                         input_text=grey(": "),
                                         callback=lambda i: selected_def.append(expression.meanings[i]))
                 expression.meanings = selected_def
@@ -127,9 +181,11 @@ class VocabScrapper():
             self.logger.debug(f"{[{expression.search_term} - {bold(expression.expression)}]}'s meanings: {expression.meanings}")
         return output
     
+    @oopsable
     def selectSentence(self, selected_expr: list[JishoSearchResultElement], mode: SelectMode = SelectMode.NONE, extend_sentence_search: bool = False) -> list[JishoSearchResultElement]:
         '''
         Redo everything with this website here : https://sentencesearch.neocities.org/    
+        Possible to regex in search !
         '''
 
         clearConsole()
@@ -178,13 +234,14 @@ class VocabScrapper():
             return
         
         self.logger.info(f'Searching for {bold(search_term)} [{len(search_results)} results]')
-        return [JishoSearchResultElement(r, search_term) for r in search_results]
+        return [JishoSearchResultElement(self.driver, r, search_term) for r in search_results]
     
     @staticmethod
     def promptForSelection(choices: list[str], input_text: str, callback: Callable[[int], None]):
         for i, choice in enumerate(choices):
             print(f"\t{bold(str(i))}.\t{choice}")
-        response = [int(r) if r != 'a' and r else 'a' for r in findall(r'(\d+(?=,?)|a)', input(input_text).replace(" ", ""))]
+        response = VocabScrapper._chackAbortResponse(input_text).replace(" ", "")
+        response = [int(r) if r != 'a' and r else 'a' for r in findall(r'(\d+(?=,?)|a)', response)]
         response = list(range(len(choices))) if 'a' in response or not response else response
         [callback(i) if i < len(choices) else "" for i in response]
             
@@ -203,5 +260,11 @@ class VocabScrapper():
     def _jishosearch(term: str) -> str:
         return f'https://jisho.org/search/{term}'
 
-
-
+    @staticmethod
+    def _chackAbortResponse(request: str) -> str:
+        response = input(request)
+        if response == "oops":
+            raise VocabScrapper.Oops
+        elif response == "quit":
+            raise VocabScrapper.Quit
+        return response
