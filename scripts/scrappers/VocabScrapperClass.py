@@ -40,7 +40,7 @@ class VocabScrapper():
                        autoselect_expression_mode: SelectMode = SelectMode.NONE,
                        is_exact_match_autoselect: bool = None, 
                        autoselect_meaning_mode: SelectMode = SelectMode.NONE, 
-                       autoselect_sentence_mode: SelectMode = SelectMode.NONE, 
+                       autoselect_sentence_mode: SentenceSelectMode = None, 
                        enable_word_sound_download: bool = True,
                        auto_download_sounds: bool = None):     
         # Navigate through vocab list
@@ -92,7 +92,7 @@ class VocabScrapper():
             if not jisho_results:
                 continue
             # Exact match and auto-select
-            if mode == self.SelectMode.FIRST or (is_exact_match_autoselect and jisho_results[0].is_exact_match) or len(jisho_results) == 1:
+            if mode == self.SelectMode.FIRST or (mode == self.SelectMode.SELECT and is_exact_match_autoselect and jisho_results[0].is_exact_match) or len(jisho_results) == 1:
                 if jisho_results[0].is_exact_match:
                     self.logger.warning(f"Found exact match for {word} !")
                 output.append(jisho_results[0])
@@ -178,7 +178,7 @@ class VocabScrapper():
     @oopsable
     def selectSentence(self, selected_expr: list[JishoSearchResultElement], mode: SentenceSelectMode = None) -> list[JishoSearchResultElement]:
         clearConsole()
-        while mode == None:
+        while mode == None or mode.mode == SentenceSelectMode.SelectMode.NONE:
             clearConsole()
             new_mode = SentenceSelectMode()
             if match(r'(?i:^y(es)?$)', self._checkAbortResponse(grey('Enable \033[1mauto-select sentences\033[0m\033[2m ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None:

@@ -1,0 +1,72 @@
+#_Scrapper_configuration_____________________________________
+#
+#   Please use this file to select different scrapping modes.
+#   Valid values for each mode are noted on top of each scrapping mode.
+#
+#   Note that if the value is set to NONE (when available), you will be 
+#   prompted to select a value during runtime.
+#
+#   Expressions______
+#
+#       expression_autoselect:      Select which search results to keep.
+#       exact_match_autoselect:     Auto-select first result if expression, furigana or romaji 
+#                                   matches search term exactly. 
+#                                   (Only available if expression_autoselect is set to SELECT) 
+#       meaning_autoselect:         Select which meanings to keep.
+#       
+#   Audio____________
+#       
+#       word_audio_download:        Enables downloading audio for search result word
+#       word_audio_auto_download:   Downloads audio without prompting if found for each word
+#                                   (Only available if word_audio_download is set to YES) 
+#       
+#   Sentences________
+#       
+#       sentence_select_mode:       Enables sentence auto select
+#       sentence_quantity:          Max number of sentences per search result
+#                                   (Only available if sentence_select_mode is set to AUTO) 
+#       sentence_min_length:        Minimum number of characters per sentence
+#                                   (Only available if sentence_select_mode is set to AUTO) 
+#       sentence_max_length:        Maximum number of characters per sentence
+#                                   (Only available if sentence_select_mode is set to AUTO) 
+#       sentence_len_distribution:  Select how the scrappers select sentences.
+#                                   EVEN: Retrieves sentences with incrementing number of characters
+#                                   RANDOM: Randomly selects sentences
+#                                   (Only available if sentence_select_mode is set to AUTO) 
+#       
+
+
+#_Expressions________________________________________________
+
+# NONE, FIRST, SELECT, ALL
+expression_autoselect=FIRST
+
+# NONE, YES, NO
+exact_match_autoselect=NONE
+
+# NONE, FIRST, SELECT, ALL
+meaning_autoselect=NONE
+
+
+#_Audio______________________________________________________
+
+# YES, NO
+word_audio_download=YES
+
+# NONE, YES, NO
+word_audio_auto_download=NONE
+
+
+#_Sentences__________________________________________________
+
+# NONE, AUTO, MANUAL
+sentence_select_mode=NONE
+
+# NONE, [0-20]
+sentence_quantity=NONE
+
+# NONE, [0-...]
+sentence_min_length=NONE
+
+# NONE, EVEN, RANDOM
+sentence_len_distribution=NONE
