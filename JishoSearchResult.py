@@ -45,6 +45,8 @@ class JishoSearchResultElement():
             }
 
             self.meanings.append(new_meaning)
+            all_sentences = self.getAllSentences()
+            self.sentence = None if not all_sentences else all_sentences[0]
         
     def getAllSentences(self):
         output = []
