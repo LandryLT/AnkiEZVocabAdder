@@ -1,16 +1,14 @@
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
-from printingUtils import bold, italic, grey, clearConsole
+from scripts.utils.printingUtils import bold, italic, grey, clearConsole
 from typing import Callable
 
 import logging
-from JishoSearchResult import JishoSearchResultElement
+# from scrappers import JishoSearchResultElement
+from scripts.scrappers import NeocitiesSearchResultElement, SentenceSelectMode, JishoSearchResultElement
 from re import match, findall
 
-import os
 from enum import Enum
 
 def oopsable(f):
@@ -21,7 +19,6 @@ def oopsable(f):
             except VocabScrapper.Oops:
                 continue
     return wrap
-
 
 class VocabScrapper():
     logger = logging.getLogger(__name__)
@@ -38,9 +35,6 @@ class VocabScrapper():
     class Oops(Exception):
         def __init__(self, *args):
             super().__init__(*args)
-
-    def __init__(self):
-        pass 
 
     def searchVocabList(self, vocab_list: list[str], 
                        autoselect_expression_mode: SelectMode = SelectMode.NONE,
@@ -72,13 +66,13 @@ class VocabScrapper():
             print(f"\t{bold('1')}. First only")
             print(f"\t{bold('2')}. Select")
             print(f"\t{bold('3')}. All")
-            response = match(r'([1-3]|oops)', self._chackAbortResponse(f'{grey("Select mode")} ({bold("1")}|{bold("2")}|{bold("3")}) {grey(": ")}'))
+            response = match(r'([1-3]|oops)', self._checkAbortResponse(f'{grey("Select mode")} ({bold("1")}|{bold("2")}|{bold("3")}) {grey(": ")}'))
             if response:
                 mode = self.SelectMode(int(response.group(0))-1)
                 self.logger.info(f"Auto-selecting expression mode is {mode.name}")
             # Auto-select exact match
             if mode == self.SelectMode.SELECT:
-                response = self._chackAbortResponse(f"\n{grey('Enable auto-selecting only exact matches ?')} ({bold('y')}|{bold('n')}) {grey(':')} ")
+                response = self._checkAbortResponse(f"\n{grey('Enable auto-selecting only exact matches ?')} ({bold('y')}|{bold('n')}) {grey(':')} ")
                 is_exact_match_autoselect = match(r'(?i:^y(es)?$)', response) != None
                 self.logger.info(f"Auto-selecting exact matches is {'en' if is_exact_match_autoselect else 'dis'}abled")
         
@@ -109,7 +103,7 @@ class VocabScrapper():
             
             # Too many results
             if len(jisho_results) > 10:
-                response = self._chackAbortResponse(f'{len(jisho_results)} results, how many to display ? ')
+                response = self._checkAbortResponse(f'{len(jisho_results)} results, how many to display ? ')
 
                 response = match(r'^\d+$', )
                 num_of_choices = 10 if response == None else int(response.group(0))
@@ -135,12 +129,12 @@ class VocabScrapper():
             self.logger.info("No soundlinks found in selected expressions, skipping...")
             return output
         if auto_download == None:
-            auto_download = match(r'(?i:^y(es)?$)', self._chackAbortResponse(grey('\033[1mAuto-download sound\033[0m\033[2m when found ?') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None
+            auto_download = match(r'(?i:^y(es)?$)', self._checkAbortResponse(grey('\033[1mAuto-download sound\033[0m\033[2m when found ?') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None
             self.logger.info(f"Auto-downloading sound is {'en' if auto_download else 'dis'}abled")
         for i, expression in enumerate(expr_with_links):
             clearConsole()
             print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(expr_with_links)} sounds to download)")}\n')
-            if not auto_download and match(r'(?i:^y(es)?$)', self._chackAbortResponse(grey('Skip this file ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None:
+            if not auto_download and match(r'(?i:^y(es)?$)', self._checkAbortResponse(grey('Skip this file ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None:
                 continue
             clearConsole()
             print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(expr_with_links)} sounds to download)")}\n')
@@ -157,7 +151,7 @@ class VocabScrapper():
             print(f"\t{bold('1')}. First only")
             print(f"\t{bold('2')}. Select")
             print(f"\t{bold('3')}. All")
-            response = match(r'[1-3]', self._chackAbortResponse(f'{grey("Select mode")} ({bold("1")}|{bold("2")}|{bold("3")}) {grey(": ")}'))
+            response = match(r'[1-3]', self._checkAbortResponse(f'{grey("Select mode")} ({bold("1")}|{bold("2")}|{bold("3")}) {grey(": ")}'))
             if response:
                 mode = self.SelectMode(int(response.group(0))-1)
                 self.logger.info(f"Auto-selecting definition mode is {mode.name}")
@@ -182,49 +176,21 @@ class VocabScrapper():
         return output
     
     @oopsable
-    def selectSentence(self, selected_expr: list[JishoSearchResultElement], mode: SelectMode = SelectMode.NONE, extend_sentence_search: bool = False) -> list[JishoSearchResultElement]:
-        '''
-        Redo everything with this website here : https://sentencesearch.neocities.org/    
-        Possible to regex in search !
-        '''
-
+    def selectSentence(self, selected_expr: list[JishoSearchResultElement], mode: SentenceSelectMode = None) -> list[JishoSearchResultElement]:
         clearConsole()
-        while mode == self.SelectMode.NONE:
+        while mode == None:
             clearConsole()
-            print(grey("Auto-select \033[1msentence\033[0m\033[2m mode"))
-            print(f"\t{bold('1')}. First")
-            print(f"\t{bold('2')}. Select")
-            response = match(r'[1-2]', input(f'{grey("Select mode")} ({bold("1")}|{bold("2")}) {grey(": ")}'))
-            if response:
-                mode = self.SelectMode(int(response.group(0))-1)
-                self.logger.info(f"Auto-selecting definition mode is {mode.name}")
-        is_exact_match_autoselect = match(r'(?i:^y(es)?$)', input(f"\n{grey('Extend searches if no sentence found ?')} ({bold('y')}|{bold('n')}) {grey(':')} ")) != None
-        self.logger.info(f"Extended sentence search is {'en' if is_exact_match_autoselect else 'dis'}abled")
+            new_mode = SentenceSelectMode()
+            if match(r'(?i:^y(es)?$)', self._checkAbortResponse(grey('Enable \033[1mauto-select sentences\033[0m\033[2m ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None:
+                new_mode.mode = SentenceSelectMode.SelectMode.AUTO
+                new_mode.setAutoMode()
+            else:
+                new_mode.mode = SentenceSelectMode.SelectMode.MANUAL
+
+            mode = new_mode
+
         output = selected_expr.copy()
-        extended_search = []
-        for i, expression in enumerate(output):
-            clearConsole()
-            print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(output)} sentences to set)")}\n')
-            if not expression.sentence:
-                if not extend_sentence_search:
-                    self.logger.info(f"{expression.expression}: No sentence found...")
-                    continue
-                extended_search = self.extendSentenceSearch()
-                if mode == self.SelectMode.FIRST:
-                    expression.sentence = extended_search[0]
-                    self.logger.debug(f"{expression.expression}'s sentence : {expression.sentence}")
-                    continue
-            if mode == self.SelectMode.FIRST or (not extend_sentence_search and len(expression.getAllSentences()) == 1):
-                self.logger.debug(f"{expression.expression}'s sentence : {expression.sentence}")
-                continue
-            
-            print(grey(f"Please select a sentence to keep"))
-
-
         return output
-
-    def extendSentenceSearch(self):
-        pass
 
     def jishoSearchTerm(self, search_term: str):
         self.driver.get(self._jishosearch(search_term))
@@ -236,11 +202,23 @@ class VocabScrapper():
         self.logger.info(f'Searching for {bold(search_term)} [{len(search_results)} results]')
         return [JishoSearchResultElement(self.driver, r, search_term) for r in search_results]
     
+    def neocitiesSearchTerm(self, jisho_result: JishoSearchResultElement):
+        search_term = f'({"|".join([jisho_result.expression]+jisho_result.getFlattenedListOfInflection())})'
+        self.driver.get(self._neocitiessearch(search_term))
+        search_results = self.driver.find_element(By.ID, "search-results-list").find_elements(By.CLASS_NAME, "search-result")
+        if not search_results:
+            self.logger.warning(f'Searching for {bold(f"{jisho_result.expression} returned no results")}, skipping...')
+            return
+        self.logger.info(f'Searching for {bold(jisho_result.expression)} [{len(search_results)} results]')
+        return [NeocitiesSearchResultElement(self.driver, r, search_term) for r in search_results]
+        
+
+
     @staticmethod
     def promptForSelection(choices: list[str], input_text: str, callback: Callable[[int], None]):
         for i, choice in enumerate(choices):
             print(f"\t{bold(str(i))}.\t{choice}")
-        response = VocabScrapper._chackAbortResponse(input_text).replace(" ", "")
+        response = VocabScrapper._checkAbortResponse(input_text).replace(" ", "")
         response = [int(r) if r != 'a' and r else 'a' for r in findall(r'(\d+(?=,?)|a)', response)]
         response = list(range(len(choices))) if 'a' in response or not response else response
         [callback(i) if i < len(choices) else "" for i in response]
@@ -259,9 +237,13 @@ class VocabScrapper():
     @staticmethod
     def _jishosearch(term: str) -> str:
         return f'https://jisho.org/search/{term}'
+    
+    @staticmethod
+    def _neocitiessearch(term: str) -> str:
+        return f'https://sentencesearch.neocities.org/#{term}'
 
     @staticmethod
-    def _chackAbortResponse(request: str) -> str:
+    def _checkAbortResponse(request: str) -> str:
         response = input(request)
         if response == "oops":
             raise VocabScrapper.Oops

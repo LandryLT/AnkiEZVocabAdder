@@ -1,9 +1,9 @@
 import logging
 import os
-from VocabScrapper import VocabScrapper
+from scripts.scrappers.VocabScrapperClass import VocabScrapper
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
-from JishoSearchResult import audio_folder
+from scripts.scrappers.JishoSearchResult import audio_folder
 
 def clearSoundFiles():
     for f in os.listdir(audio_folder):

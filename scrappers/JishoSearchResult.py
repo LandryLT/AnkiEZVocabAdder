@@ -3,7 +3,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from re import findall, match
-from furiganaToRomaji import convertToRomaji
+from scripts.utils.furiganaToRomaji import convertToRomaji
 import requests
 import uuid
 import os
@@ -91,9 +91,13 @@ class JishoSearchResultElement():
             pass
 
 
-    def getAllSentences(self):
+    def getAllSentences(self) -> list[Sentence]:
         return [m.sentences for m in self.meanings]
 
+    def getFlattenedListOfInflection(self) -> list[str]:
+        items = list(self.inflections.items())
+        return [infl for tense in items for infl in tense]
+    
     def parseFurigana(self, search_result: WebElement) -> str:        
         try:
             furiganas = [f.text for f in search_result.find_element(By.CLASS_NAME, "furigana").find_elements(By.CLASS_NAME, "kanji")]
