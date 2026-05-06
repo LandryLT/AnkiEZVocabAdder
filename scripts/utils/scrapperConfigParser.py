@@ -12,6 +12,7 @@ class scrapperConfigParser():
             "enable_word_sound_download": True,
             "auto_download_sounds": None
         }
+        self.max_results_displayed = 20
 
 
         with open(filepath, 'r') as f:
@@ -26,6 +27,8 @@ class scrapperConfigParser():
             assert isinstance(self.parsedParams["autoselect_sentence_mode"], SentenceSelectMode)
             for key, item in params.items():
                 match key:
+                    case "max_results_displayed":
+                        self.max_results_displayed = self.parseInt(item)
                     case "expression_autoselect":
                         self.parsedParams["autoselect_expression_mode"] = self.parseSelectMode(item)
                     case "exact_match_autoselect":
@@ -69,7 +72,7 @@ class scrapperConfigParser():
         if not value:
             return SentenceSelectMode.SelectMode.NONE
         value = value.group(0)
-        return SentenceSelectMode.SelectMode(["AUTO", "MANUAL"].index(value))
+        return SentenceSelectMode.SelectMode(["MANUAL", "AUTO"].index(value))
     
     @staticmethod
     def parseSentenceDistributionMode(value: str) -> SentenceSelectMode.LengthDistribution:

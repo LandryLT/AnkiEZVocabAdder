@@ -6,6 +6,10 @@
 #   Note that if the value is set to NONE (when available), you will be 
 #   prompted to select a value during runtime.
 #
+#   General__________
+#
+#       max_results_displayed:      Max search results to display in one block
+#
 #   Expressions______
 #
 #       expression_autoselect:      Select which search results to keep.
@@ -35,32 +39,37 @@
 #                                   (Only available if sentence_select_mode is set to AUTO) 
 #       
 
+#_General____________________________________________________
+
+#[1-...]
+max_results_displayed=20
+
 
 #_Expressions________________________________________________
 
 # NONE, FIRST, SELECT, ALL
-expression_autoselect=FIRST
+expression_autoselect=ALL
 
 # NONE, YES, NO
 exact_match_autoselect=NONE
 
 # NONE, FIRST, SELECT, ALL
-meaning_autoselect=NONE
+meaning_autoselect=ALL
 
 
 #_Audio______________________________________________________
 
 # YES, NO
-word_audio_download=YES
+word_audio_download=NO
 
 # NONE, YES, NO
-word_audio_auto_download=NONE
+word_audio_auto_download=NO
 
 
 #_Sentences__________________________________________________
 
 # NONE, AUTO, MANUAL
-sentence_select_mode=NONE
+sentence_select_mode=MANUAL
 
 # NONE, [0-20]
 sentence_quantity=NONE

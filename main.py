@@ -32,14 +32,14 @@ if __name__ == "__main__":
     if not os.path.isfile(vocab_filepath):
         scrapperConfig = {}
     else:
-        scrapperConfig = scrapperConfigParser(scrapperConfig_filepath)
-        scrapperConfig = scrapperConfig.parsedParams
+        config_parser = scrapperConfigParser(scrapperConfig_filepath)
+        scrapperConfig = config_parser.parsedParams
 
     if not vocab_list:
         logger.warning("No words in search list, exiting...")
         quit()
     
-    scrapper = VocabScrapper()
+    scrapper = VocabScrapper(max_display=config_parser.max_results_displayed)
     with scrapper:
         try:
             scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)

@@ -7,9 +7,13 @@ from typing import Callable
 import logging
 # from scrappers import JishoSearchResultElement
 from scripts.scrappers import NeocitiesSearchResultElement, SentenceSelectMode, JishoSearchResultElement
-from re import match, findall
-
+from re import match, findall, finditer, compile
+from time import sleep
 from enum import Enum
+import math
+import asyncio
+
+from concurrent.futures import ThreadPoolExecutor
 
 def oopsable(f):
     def wrap(*args, **kwargs):
@@ -35,7 +39,10 @@ class VocabScrapper():
     class Oops(Exception):
         def __init__(self, *args):
             super().__init__(*args)
-
+    
+    def __init__(self, max_display):
+        self.max_rez_display = max_display
+    
     def searchVocabList(self, vocab_list: list[str], 
                        autoselect_expression_mode: SelectMode = SelectMode.NONE,
                        is_exact_match_autoselect: bool = None, 
@@ -81,10 +88,8 @@ class VocabScrapper():
         # Go through vocab list
         for word_ind, word in enumerate(vocab_list):
             word = word.replace('\r\n', "")
-            clearConsole()
-            print(f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(vocab_list)} search terms)")}\n')
-            print(italic(grey(f'Loading from jisho.org...')))
-            jisho_results = self.jishoSearchTerm(word)
+            header = f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(vocab_list)} search terms)")}\n'
+            jisho_results = self.jishoSearchTerm(word, header)
             clearConsole()
             print(f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(vocab_list)} search terms)")}\n')
             
@@ -101,21 +106,23 @@ class VocabScrapper():
                 [output.append(rez) for rez in jisho_results]
                 continue
             
-            # Too many results
-            if len(jisho_results) > 10:
-                response = self._checkAbortResponse(f'{len(jisho_results)} results, how many to display ? ')
+            # num_of_results = len(jisho_results)
+            # # Too many results
+            # if num_of_results > 10:
+            #     response = self._checkAbortResponse(grey(f'{num_of_results} results, how many to display ? '))
 
-                response = match(r'^\d+$', )
-                num_of_choices = 10 if response == None else int(response.group(0))
-                jisho_results = jisho_results[:min(num_of_choices, len(jisho_results))]
+            #     response = match(r'^\d+$', response)
+            #     num_of_choices = num_of_results if response == None else int(response.group(0))
+            #     jisho_results = jisho_results[:min(num_of_choices, num_of_results)]
 
 
-            print(grey(f"Please select expressions to keep"))
+            print()
             self.promptForSelection(choices=[f"{bold(expr.expression)} ({expr.romaji}):\t\"{italic(expr.meanings[0].meaning)}\" {grey(f'(1/{len(expr.meanings)} meanings)')}" for expr in jisho_results], 
                                     input_text=grey("Expressions indices to keep ") + (f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')}) " if expression_question else "") + ": ",
+                                    header=grey(f"Please select expressions to keep"),
                                     callback=lambda i: output.append(jisho_results[i]))
             
-            expression_question = False
+            # expression_question = False
         return output
     
     @oopsable
@@ -163,9 +170,9 @@ class VocabScrapper():
             print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(output)} expressions to check)")}\n')
             if mode == self.SelectMode.SELECT and len(expression.meanings) > 1:
                 selected_def = []
-                print(grey(f"Please select meanings to keep"))
                 self.promptForSelection(choices=[f"{italic(m.meaning)}" for m in expression.meanings], 
                                         input_text=grey(": "),
+                                        header=grey(f"Please select meanings to keep"),
                                         callback=lambda i: selected_def.append(expression.meanings[i]))
                 expression.meanings = selected_def
 
@@ -190,38 +197,116 @@ class VocabScrapper():
             mode = new_mode
 
         output = selected_expr.copy()
+        selected_sentences = []
+        
+        for i, expression in enumerate(selected_expr):
+            search_term = f'{"|".join([expression.expression]+expression.getFlattenedListOfInflection())}'
+            neocities_rez = self.neocitiesSearchTerm(search_term, expression.expression, f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(output)} sentences to set)")}\n')
+            if not neocities_rez:
+                continue
+            clearConsole()
+            if mode.mode == SentenceSelectMode.SelectMode.MANUAL:
+                choices = [f'{s.japanese}\n\t\t{s.english}\n' for s in neocities_rez]
+                for ind, choice in enumerate(choices):
+                    for match in list(finditer(compile(search_term), choice))[::-1]:
+                        choice = choice[:match.start()] + bold(choice[match.start():match.end()]) + choice[match.end():]
+                    choices[ind] = choice
+                self.promptForSelection(choices=choices,
+                                        input_text=': ',
+                                        header=f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(output)} sentences to set)")}\n',
+                                        callback=lambda i: selected_sentences.append(neocities_rez[i]))
         return output
 
-    def jishoSearchTerm(self, search_term: str):
+    def jishoSearchTerm(self, search_term: str, header: str) -> list[JishoSearchResultElement]:
+        clearConsole()
+        print(header)
+        print(italic(grey(f'Loading from jisho.org...')))
         self.driver.get(self._jishosearch(search_term))
-        search_results = self.driver.find_element(By.ID, "primary").find_elements(By.XPATH, "./div")
+        search_results = self.driver.find_element(By.ID, "primary").find_elements(By.XPATH, "./div/div")
         if not search_results:
             self.logger.warning(f'Searching for {bold(f"{search_term} returned no results")}, skipping...')
             return
         
         self.logger.info(f'Searching for {bold(search_term)} [{len(search_results)} results]')
-        return [JishoSearchResultElement(self.driver, r, search_term) for r in search_results]
+        output = []
+        for i, r in enumerate(search_results):
+            clearConsole()
+            print(header)
+            print(italic(grey(f'Loading {i}/{len(search_results)} expressions from jisho.org...')))
+            output.append(JishoSearchResultElement(self.driver, r, search_term))
+        return output
     
-    def neocitiesSearchTerm(self, jisho_result: JishoSearchResultElement):
-        search_term = f'({"|".join([jisho_result.expression]+jisho_result.getFlattenedListOfInflection())})'
+    def neocitiesSearchTerm(self, search_term: str, expression: str, header: str) -> list[NeocitiesSearchResultElement]:
+        clearConsole()
+        print(italic(grey(f'Loading sentencesearch.neocities.org...')))
         self.driver.get(self._neocitiessearch(search_term))
-        search_results = self.driver.find_element(By.ID, "search-results-list").find_elements(By.CLASS_NAME, "search-result")
+        while not self.driver.find_element(By.ID, "results-info").is_displayed():
+            self.driver.find_element(By.ID, "searchButton").click()
+        total_results = int(self.driver.find_element(By.ID, "num-results").text)
+        while not self.driver.find_element(By.ID, "results-list-end").is_displayed():
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            search_results = self.driver.find_element(By.ID, "search-results-list").find_elements(By.XPATH, "./div")
+            clearConsole()
+            print(header)
+            print(italic(grey(f'Loading {len(search_results)}/{total_results} sentences from sentencesearch.neocities.org...')))
+            sleep(0.05)
+        clearConsole()
+        print(header)
+        search_results = self.driver.find_element(By.ID, "search-results-list").find_elements(By.XPATH, "./div")
         if not search_results:
-            self.logger.warning(f'Searching for {bold(f"{jisho_result.expression} returned no results")}, skipping...')
-            return
-        self.logger.info(f'Searching for {bold(jisho_result.expression)} [{len(search_results)} results]')
-        return [NeocitiesSearchResultElement(self.driver, r, search_term) for r in search_results]
+            self.logger.warning(f'Searching for {bold(f"{expression} returned no results")}, skipping...')
+            return 
+        print(italic(grey(f'Loaded {len(search_results)} sentences from sentencesearch.neocities.org...')))
+        self.logger.info(f'Searching for {bold(expression)} [{len(search_results)} results]')
+        
+        def scrap(i_rez_pair):
+            (i, rez) = i_rez_pair
+            # clearConsole()
+            # print(header)
+            # print(italic(grey(f'Loaded {len(search_results)} sentences from sentencesearch.neocities.org...')))
+            # print(italic(grey(f'Scrapping {i} sentences from loaded sentences...')))
+            elem = NeocitiesSearchResultElement(rez, search_term)
+            if elem.japanese and elem.english:
+                return elem
+            return None
+        with ThreadPoolExecutor() as executor:
+            output = executor.map(scrap, enumerate(search_results))
+            executor.shutdown(wait=True)
+        
+        return [e for e in output if e]
         
 
 
-    @staticmethod
-    def promptForSelection(choices: list[str], input_text: str, callback: Callable[[int], None]):
-        for i, choice in enumerate(choices):
-            print(f"\t{bold(str(i))}.\t{choice}")
-        response = VocabScrapper._checkAbortResponse(input_text).replace(" ", "")
-        response = [int(r) if r != 'a' and r else 'a' for r in findall(r'(\d+(?=,?)|a)', response)]
-        response = list(range(len(choices))) if 'a' in response or not response else response
-        [callback(i) if i < len(choices) else "" for i in response]
+    def promptForSelection(self, choices: list[str], input_text: str, header: str, callback: Callable[[int], None]):
+        start_index = 0
+        num_of_choices = len(choices)
+        while True:
+            clearConsole()
+            print(header)
+            end_index = start_index + self.max_rez_display
+            for i, choice in enumerate(choices[start_index: min(end_index, num_of_choices)]):
+                print(f"\t{bold(str(i+start_index))}.\t{choice}")
+            if num_of_choices > self.max_rez_display:
+                print(grey(f'[{start_index}-{min(end_index, num_of_choices)-1}/{num_of_choices}]') +
+                      f'({italic("Enter")}: {grey("next choices")} | p: {grey("prev. choices ")})')
+            response = VocabScrapper._checkAbortResponse(input_text).replace(" ", "")
+            if not response:
+                start_index = 0 if end_index >= num_of_choices else (self.max_rez_display + start_index) % num_of_choices
+                continue
+            if findall(r'\b[a-zA-Z]+\b', response):
+                if match(r'\bp\b', response):
+                    start_index = start_index - self.max_rez_display
+                    if start_index < 0:
+                        start_index = int(math.floor(num_of_choices/(self.max_rez_display))*self.max_rez_display)
+                    continue
+                if match(r'\ba\b', response):
+                    output = list(range(len(choices)))
+                    break
+            if match(r'^((,| )*\b\d+\b(,| )*)+$', response):
+                output = [int(r) for r in findall(r'\b\d+\b', response)]
+                break
+        [callback(i) if i < len(choices) else "" for i in output]
+        return
             
     def __enter__(self):
         options = Options()

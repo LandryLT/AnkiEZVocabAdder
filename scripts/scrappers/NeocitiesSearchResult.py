@@ -6,6 +6,7 @@ from enum import Enum
 from re import match
 from scripts.utils.printingUtils import grey, bold
 import scripts.scrappers as scrappers
+from scripts.scrappers.JishoSearchResult import Sentence
 
 class SentenceSelectMode():
     class SelectMode(Enum):
@@ -74,5 +75,8 @@ class SentenceSelectMode():
 
 
 class NeocitiesSearchResultElement():
-    def __init__(self, driver: Firefox, search_result: WebElement, expression: str):
-        pass
+    def __init__(self, search_result: WebElement, expression: str):
+        self.expression = expression
+        self.japanese = search_result.find_element(By.CLASS_NAME, "jap").text
+        self.english = search_result.find_element(By.CLASS_NAME, "eng").text
+        self.audio_link = search_result.find_element(By.CLASS_NAME, "audioButton").get_attribute("href")

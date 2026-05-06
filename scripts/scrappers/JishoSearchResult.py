@@ -95,7 +95,7 @@ class JishoSearchResultElement():
         return [m.sentences for m in self.meanings]
 
     def getFlattenedListOfInflection(self) -> list[str]:
-        items = list(self.inflections.items())
+        items = list(self.inflections.values())
         return [infl for tense in items for infl in tense]
     
     def parseFurigana(self, search_result: WebElement) -> str:        
@@ -105,7 +105,7 @@ class JishoSearchResultElement():
             return self.expression
         output = ""
         for c in self.expression:
-            if c in self.kanjis:
+            if c in self.kanjis and furiganas:
                 output += furiganas.pop(0)
             else:
                 output += c
