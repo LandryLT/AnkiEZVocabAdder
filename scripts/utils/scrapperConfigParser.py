@@ -68,7 +68,7 @@ class scrapperConfigParser():
         
     @staticmethod
     def parseSentenceSelectMode(value: str) -> SentenceSelectMode.SelectMode:
-        value = match(r'^(AUTO|MANUAL)$', value)
+        value = match(r'^(MANUAL|AUTO)$', value)
         if not value:
             return SentenceSelectMode.SelectMode.NONE
         value = value.group(0)

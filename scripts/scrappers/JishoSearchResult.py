@@ -2,13 +2,12 @@
 # from selenium.webdriver.remote.webelement import WebElement
 # from selenium.webdriver.common.by import By
 # from selenium.common.exceptions import NoSuchElementException
-from playwright.async_api import Page, Locator, WebError
+from playwright.async_api import Page, Locator
 from re import findall, match
 from scripts.utils.furiganaToRomaji import convertToRomaji
 import requests
 import uuid
 import os
-from time import sleep
 import asyncio
 
 audio_folder = "./audio/words/"
@@ -94,17 +93,18 @@ class JishoSearchResultElement():
             await inflections_link.click()
             inflection_table = self.browser.locator("#inflection_modal")
             close_button = inflection_table.locator(".close-reveal-modal")
-            inflection_rows: list[Locator] = await inflection_table.get_by_role("tbody").first.get_by_role("tr").all()
-            inflection_cells_cors = [td.inner_text() for td in await inflection_table.get_by_role("tbody").first.get_by_role("td").all()]
+            inflection_tbody = inflection_table.locator("tbody").last
+            inflection_rows: list[Locator] = await inflection_tbody.locator("tr").all()
+            inflection_cells_cors = [td.inner_text() for td in await inflection_tbody.locator("td").all()]
             inflection_cells = await asyncio.gather(*inflection_cells_cors)
             while any([td == '' for td in inflection_cells]):
-                sleep(0.05)
-                inflection_rows: list[Locator] = await inflection_table.get_by_role("tbody").first.get_by_role("tr").all()
-                inflection_cells_cors = [td.inner_text() for td in await inflection_table.get_by_role("tbody").first.get_by_role("td").all()]
+                await asyncio.sleep(0.05)
+                inflection_rows: list[Locator] = await inflection_tbody.locator("tr").all()
+                inflection_cells_cors = [td.inner_text() for td in await inflection_tbody.locator("td").all()]
                 inflection_cells = await asyncio.gather(*inflection_cells_cors)
             
             for tr in inflection_rows:
-                cells_cors = [td.inner_text() for td in await tr.get_by_role("td")]
+                cells_cors = [td.inner_text() for td in await tr.locator("td").all()]
                 cells = await asyncio.gather(*cells_cors)
                 self.inflections[cells[0]] = cells[1:]
             await close_button.click()

@@ -219,8 +219,8 @@ class VocabScrapper():
             if mode.mode == SentenceSelectMode.SelectMode.MANUAL:
                 choices = [f'{s.japanese}\n\t\t{s.english}\n' for s in neocities_rez]
                 for ind, choice in enumerate(choices):
-                    for match in list(finditer(compile(search_term), choice))[::-1]:
-                        choice = choice[:match.start()] + bold(choice[match.start():match.end()]) + choice[match.end():]
+                    for m in list(finditer(compile(search_term), choice))[::-1]:
+                        choice = choice[:m.start()] + bold(choice[m.start():m.end()]) + choice[m.end():]
                     choices[ind] = choice
                 self.promptForSelection(choices=choices,
                                         input_text=': ',
@@ -255,6 +255,7 @@ class VocabScrapper():
         await self.page.goto(self._neocitiessearch(search_term))
         while not await self.page.locator("#results-info").is_visible():
             await self.page.locator("#searchButton").click()
+            await asyncio.sleep(0.05)
         total_results = int(await self.page.locator("#num-results").inner_text())
         while not await self.page.locator("#results-list-end").is_visible():
             await self.page.evaluate("() => window.scrollTo(0, document.body.scrollHeight);")
@@ -262,7 +263,7 @@ class VocabScrapper():
             clearConsole()
             print(header)
             print(italic(grey(f'Loading {len(search_results)}/{total_results} sentences from sentencesearch.neocities.org...')))
-            sleep(0.05)
+            await asyncio.sleep(0.05)
         clearConsole()
         print(header)
         search_results_locator = self.page.locator("#search-results-list\div")

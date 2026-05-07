@@ -69,7 +69,7 @@ word_audio_auto_download=YES
 #_Sentences__________________________________________________
 
 # NONE, AUTO, MANUAL
-sentence_select_mode=MANUAL
+sentence_select_mode=NONE
 
 # NONE, [0-20]
 sentence_quantity=NONE
