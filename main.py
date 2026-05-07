@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
 from scripts.scrappers.JishoSearchResult import audio_folder
 from scripts.utils.scrapperConfigParser import scrapperConfigParser
+import asyncio
 
 vocab_filepath = "./vocab2add.txt"
 scrapperConfig_filepath = "./searchConfig.txt"
@@ -13,7 +14,7 @@ def clearSoundFiles():
     for f in os.listdir(audio_folder):
         os.remove(audio_folder+f)
 
-if __name__ == "__main__":
+async def main():
     clearSoundFiles()
     vocab_list = []
     if not os.path.isfile(vocab_filepath):
@@ -40,9 +41,12 @@ if __name__ == "__main__":
         quit()
     
     scrapper = VocabScrapper(max_display=config_parser.max_results_displayed)
-    with scrapper:
+    async with scrapper:
+        # print("Started")
         try:
-            scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)
+            await scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)
         except VocabScrapper.Quit:
             logger.info("Goodbye")
             
+if __name__ == "__main__":
+    asyncio.run(main())

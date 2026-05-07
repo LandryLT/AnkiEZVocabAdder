@@ -60,10 +60,10 @@ meaning_autoselect=ALL
 #_Audio______________________________________________________
 
 # YES, NO
-word_audio_download=NO
+word_audio_download=YES
 
 # NONE, YES, NO
-word_audio_auto_download=NO
+word_audio_auto_download=YES
 
 
 #_Sentences__________________________________________________
