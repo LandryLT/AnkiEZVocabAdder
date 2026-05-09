@@ -1,9 +1,7 @@
 from enum import Enum
 from re import match
 from scripts.utils.printingUtils import grey, bold
-import scripts.scrappers as scrappers
-from collections import namedtuple
-NeocitiesResult = namedtuple('NeocitiesResult', ["japanese", "english", "audio_link"])
+from scripts.scrappers.Scrapper import Scrapper
 
 class SentenceSelectMode():
     class SelectMode(Enum):
@@ -26,7 +24,7 @@ class SentenceSelectMode():
 
     def setAutoMode(self):
         while self.quantity == -1:
-            response = scrappers.VocabScrapper._checkAbortResponse(grey('Max number of sentences per expression ? ') + f"({bold('0-'+str(SentenceSelectMode.MAX_QUANTITY))}) {grey(':')} ")
+            response = Scrapper._checkAbortResponse(grey('Max number of sentences per expression ? ') + f"({bold('0-'+str(SentenceSelectMode.MAX_QUANTITY))}) {grey(':')} ")
             if not response:
                 self.quantity = SentenceSelectMode.MAX_QUANTITY
                 break
@@ -37,7 +35,7 @@ class SentenceSelectMode():
             self.quantity = response
         
         while self.min_length == -1:
-            response = scrappers.VocabScrapper._checkAbortResponse(grey('Minimum number of characters per sentence ? ') + f"({bold('0-n')}) {grey(':')} ")
+            response = Scrapper._checkAbortResponse(grey('Minimum number of characters per sentence ? ') + f"({bold('0-n')}) {grey(':')} ")
             if not response:
                 self.min_length = 0
                 break
@@ -48,7 +46,7 @@ class SentenceSelectMode():
             self.min_length = response
         
         while self.max_length == -1:
-            response = scrappers.VocabScrapper._checkAbortResponse(grey('Maximum number of characters per sentence ? ') + f"({bold(str(self.min_length)+'-n')}) {grey(':')} ")
+            response = Scrapper._checkAbortResponse(grey('Maximum number of characters per sentence ? ') + f"({bold(str(self.min_length)+'-n')}) {grey(':')} ")
             if not response:
                 self.max_length = 9999999
                 break
@@ -61,7 +59,7 @@ class SentenceSelectMode():
         print("\t1. Even")
         print("\t2. Random")
         while self.length_distribution == SentenceSelectMode.LengthDistribution.NONE:
-            response = scrappers.VocabScrapper._checkAbortResponse(grey('Select mode ') + f"({bold('1')+'|'+bold('2')}) {grey(':')} ")
+            response = Scrapper._checkAbortResponse(grey('Select mode ') + f"({bold('1')+'|'+bold('2')}) {grey(':')} ")
             if not response:
                 self.length_distribution = SentenceSelectMode.LengthDistribution.EVEN
                 break

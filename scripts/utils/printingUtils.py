@@ -10,4 +10,4 @@ def grey(text: str) -> str:
 def clearConsole():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-
+tqdm_bar_format = grey('{desc}: {percentage:3.0f}%|{bar:20}|')

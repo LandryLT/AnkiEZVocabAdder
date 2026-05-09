@@ -1,6 +1,6 @@
 import logging
 import os
-from scripts.scrappers.VocabScrapperClass import VocabScrapper
+from scripts.scrappers import VocabScrapper, Scrapper
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
 from scripts.scrappers.JishoSearchResult import audio_folder
@@ -45,7 +45,7 @@ async def main():
         # print("Started")
         try:
             await scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)
-        except VocabScrapper.Quit:
+        except Scrapper.Quit:
             logger.info("Goodbye")
             
 if __name__ == "__main__":

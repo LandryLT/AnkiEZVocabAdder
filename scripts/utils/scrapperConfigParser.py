@@ -1,13 +1,13 @@
 from re import match
-from scripts.scrappers.VocabScrapperClass import VocabScrapper
-from scripts.scrappers.NeocitiesSearchResult import SentenceSelectMode
+from scripts.scrappers.JishoScrapper import JishoScrapper
+from scripts.scrappers.NeocitiesSelectMode import SentenceSelectMode
 
 class scrapperConfigParser():
     def __init__(self, filepath: str):
         self.parsedParams = {
-            "autoselect_expression_mode": VocabScrapper.SelectMode.NONE,
+            "autoselect_expression_mode": JishoScrapper.SelectMode.NONE,
             "is_exact_match_autoselect": None,
-            "autoselect_meaning_mode": VocabScrapper.SelectMode.NONE,
+            "autoselect_meaning_mode": JishoScrapper.SelectMode.NONE,
             "autoselect_sentence_mode": SentenceSelectMode(),
             "enable_word_sound_download": True,
             "auto_download_sounds": None
@@ -83,9 +83,9 @@ class scrapperConfigParser():
         return SentenceSelectMode.LengthDistribution(["EVEN", "RANDOM"].index(value))
     
     @staticmethod
-    def parseSelectMode(value: str) -> VocabScrapper.SelectMode:
+    def parseSelectMode(value: str) -> JishoScrapper.SelectMode:
         value = match(r'^(FIRST|SELECT|ALL)$', value)
         if not value:
-            return VocabScrapper.SelectMode.NONE
+            return JishoScrapper.SelectMode.NONE
         value = value.group(0)
-        return VocabScrapper.SelectMode(["FIRST", "SELECT", "ALL"].index(value))
+        return JishoScrapper.SelectMode(["FIRST", "SELECT", "ALL"].index(value))

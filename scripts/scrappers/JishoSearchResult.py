@@ -20,7 +20,7 @@ def parseFurigana(expression, kanjis, furiganas):
 
 
 JishoSearchResultRaw = namedtuple('JishoSearchResult', ['expression', 'furiganas', 'meanings', 'tags', 'soundlink', 'inflectionlink'], defaults=[str, str, list[dict[str, str | None]], list[str], str, ElementHandle])
-Meaning = namedtuple('Meaning', ['tag', 'meaning'], defaults=[str, str])
+Meaning = namedtuple('Meaning', ['tag', 'meaning', 'supplemental_info'], defaults=[str, str, list[str]])
 class JishoResult():
     def __init__(self, raw: JishoSearchResultRaw, search_term: str):
         self.search_term = search_term
@@ -29,7 +29,7 @@ class JishoResult():
         self.furigana = parseFurigana(raw.expression, self.kanjis, raw.furiganas)
         self.romaji = convertToRomaji(self.furigana)
         self.is_exact_match = self.search_term in (self.expression, self.furigana, self.romaji) 
-        self.meanings = [Meaning(r['tag'], r['meaning']) for r in raw.meanings]
+        self.meanings = [Meaning(r['tag'], r['meaning'], r['supplemental_info']) for r in raw.meanings]
         self.tags = raw.tags
         self.JLPT = 0
         for tag in self.tags:
@@ -72,6 +72,9 @@ class JishoResult():
         items = list(self.inflections.values())
         return [infl for tense in items for infl in tense]
     
+    def setUsuallyWrittenInKana(self):
+        self.usually_kana = any(any(match(r"Usually written using kana alone", sup_inf) for sup_inf in  m.supplemental_info) for m in self.meanings)
+
     async def downloadSound(self) -> str:
         if not self.soundlink:
             return

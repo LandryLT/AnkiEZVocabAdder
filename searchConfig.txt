@@ -71,6 +71,9 @@ word_audio_auto_download=YES
 # NONE, AUTO, MANUAL
 sentence_select_mode=MANUAL
 
+# NONE, YES, NO
+auto_validate_random=NONE
+
 # NONE, [0-20]
 sentence_quantity=NONE
 
