@@ -1,6 +1,6 @@
 from scripts.scrappers.Scrapper import Scrapper, oopsable
 from scripts.scrappers.JishoSearchResult import JishoResult
-from scripts.scrappers.NeocitiesSelectMode import SentenceSelectMode
+from scripts.scrappers.NeocitiesSelectMode import NeocitiesSelectMode
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_bar_format
 import re
 from tqdm.asyncio import tqdm
@@ -13,19 +13,8 @@ class NeocitiesScrapper(Scrapper):
         super().__init__(page, max_rez_display)
         
     @oopsable()
-    async def selectSentence(self, selected_expr: list[JishoResult], mode: SentenceSelectMode = None) -> list[JishoResult]:
+    async def selectSentence(self, selected_expr: list[JishoResult], mode: NeocitiesSelectMode = None) -> list[JishoResult]:
         clearConsole()
-        while mode == None or mode.mode == SentenceSelectMode.SelectMode.NONE:
-            clearConsole()
-            new_mode = SentenceSelectMode()
-            if re.match(r'(?i:^y(es)?$)', self._checkAbortResponse(grey('Enable \033[1mauto-select sentences\033[0m\033[2m ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None:
-                new_mode.mode = SentenceSelectMode.SelectMode.AUTO
-                new_mode.setAutoMode()
-            else:
-                new_mode.mode = SentenceSelectMode.SelectMode.MANUAL
-
-            mode = new_mode
-
         output = selected_expr.copy()
         selected_sentences = []
         expression_question = True
@@ -35,8 +24,12 @@ class NeocitiesScrapper(Scrapper):
             neocities_rez = await self.neo_cities_search_term(search_term, expression.expression, f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(output)} sentences to set)")}\n')
             if not neocities_rez:
                 continue
+            if mode.max_length != -1 and (mode.min_length != -1 or mode.min_length <= mode.max_length):
+                neocities_rez = [nr for nr in neocities_rez if len(nr.japanese) <= mode.max_length]
+            if mode.min_length != -1 and (mode.max_length != -1 or mode.min_length <= mode.max_length):
+                neocities_rez = [nr for nr in neocities_rez if len(nr.japanese) >= mode.min_length]
             clearConsole()
-            if mode.mode == SentenceSelectMode.SelectMode.MANUAL:
+            if mode.mode == NeocitiesSelectMode.SelectMode.MANUAL:
                 choices = [f'{s.japanese}\n\t\t{s.english}\n' for s in neocities_rez]
                 for ind, choice in enumerate(choices):
                     for m in list(re.finditer(re.compile(search_term), choice))[::-1]:

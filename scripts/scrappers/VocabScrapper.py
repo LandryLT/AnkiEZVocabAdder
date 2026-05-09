@@ -1,6 +1,6 @@
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole
 import logging
-from scripts.scrappers import SentenceSelectMode, JishoScrapper, NeocitiesScrapper
+from scripts.scrappers import NeocitiesSelectMode, JishoScrapper, NeocitiesScrapper, JishoSelectMode
 from playwright.async_api import async_playwright
 
 
@@ -11,19 +11,19 @@ class VocabScrapper():
         self.max_rez_display = max_display
     
     async def searchVocabList(self, vocab_list: list[str], 
-                       autoselect_expression_mode: JishoScrapper.SelectMode = JishoScrapper.SelectMode.NONE,
-                       is_exact_match_autoselect: bool = None, 
-                       autoselect_meaning_mode: JishoScrapper.SelectMode = JishoScrapper.SelectMode.NONE, 
-                       autoselect_sentence_mode: SentenceSelectMode = None, 
-                       enable_word_sound_download: bool = True,
-                       auto_download_sounds: bool = None): 
+                       jisho_mode: JishoSelectMode, 
+                       neocities_mode: NeocitiesSelectMode): 
             
         # Navigate through vocab list
-        selected_expr = await self.jisho.selectExpressions(vocab_list, autoselect_expression_mode, is_exact_match_autoselect)
-        selected_expr = await self.jisho.downloadSounds(selected_expr, enable_word_sound_download, auto_download_sounds)
-        selected_expr = await self.jisho.selectMeanings(selected_expr, autoselect_meaning_mode)
+        jisho_mode.setAutoselectExpressionMode()
+        selected_expr = await self.jisho.selectExpressions(vocab_list, jisho_mode.autoselect_expression_mode, jisho_mode.is_exact_match_autoselect)
+        jisho_mode.setAudioAutoDownload()
+        selected_expr = await self.jisho.downloadSounds(selected_expr, jisho_mode.enable_word_sound_download, jisho_mode.auto_download_sounds)
+        jisho_mode.setAutoselectMeaningMode()
+        selected_expr = await self.jisho.selectMeanings(selected_expr, jisho_mode.autoselect_meaning_mode)
         [expr.setUsuallyWrittenInKana() for expr in selected_expr]
-        selected_expr = await self.neocities.selectSentence(selected_expr, autoselect_sentence_mode)
+        neocities_mode.setAutoMode()
+        selected_expr = await self.neocities.selectSentence(selected_expr, neocities_mode)
         
         clearConsole()
         print(f'{bold("[SEARCH RESULTS]")}')

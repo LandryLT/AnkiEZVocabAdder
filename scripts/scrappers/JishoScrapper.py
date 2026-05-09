@@ -2,39 +2,16 @@ from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_b
 from enum import Enum
 from scripts.scrappers.JishoSearchResult import JishoResult, JishoSearchResultRaw
 from scripts.scrappers.Scrapper import Scrapper, oopsable
+from scripts.scrappers.JishoSelectMode import JishoSelectMode
 import re
 from tqdm.asyncio import tqdm
 
-class JishoScrapper(Scrapper):
-    class SelectMode(Enum):
-        NONE = -1
-        FIRST = 0
-        SELECT = 1
-        ALL = 2
-    
+class JishoScrapper(Scrapper):    
     def __init__(self, page, max_rez_display):
         super().__init__(page, max_rez_display)
 
     @oopsable()
-    async def selectExpressions(self, vocab_list: list[str], mode: SelectMode = None, is_exact_match_autoselect: bool = False) -> list[JishoResult]:
-        # Auto-select expression mode
-        clearConsole()
-        while mode == self.SelectMode.NONE:
-            clearConsole()
-            print(grey("Auto-select \033[1mexpression\033[0m\033[2m mode"))
-            print(f"\t{bold('1')}. First only")
-            print(f"\t{bold('2')}. Select")
-            print(f"\t{bold('3')}. All")
-            response = re.match(r'([1-3]|oops)', self._checkAbortResponse(f'{grey("Select mode")} ({bold("1")}|{bold("2")}|{bold("3")}) {grey(": ")}'))
-            if response:
-                mode = self.SelectMode(int(response.group(0))-1)
-                self.logger.info(f"Auto-selecting expression mode is {mode.name}")
-            # Auto-select exact match
-            if mode == self.SelectMode.SELECT:
-                response = self._checkAbortResponse(f"\n{grey('Enable auto-selecting only exact matches ?')} ({bold('y')}|{bold('n')}) {grey(':')} ")
-                is_exact_match_autoselect = re.match(r'(?i:^y(es)?$)', response) != None
-                self.logger.info(f"Auto-selecting exact matches is {'en' if is_exact_match_autoselect else 'dis'}abled")
-        
+    async def selectExpressions(self, vocab_list: list[str], mode: JishoSelectMode.SelectMode = None, is_exact_match_autoselect: bool = False) -> list[JishoResult]:        
         output = []
         expression_question = True
         # Go through vocab list
@@ -49,12 +26,12 @@ class JishoScrapper(Scrapper):
             if not jisho_results:
                 continue
             # Exact match and auto-select
-            if mode == self.SelectMode.FIRST or (mode == self.SelectMode.SELECT and is_exact_match_autoselect and jisho_results[0].is_exact_match) or len(jisho_results) == 1:
+            if mode == JishoSelectMode.SelectMode.FIRST or (mode == JishoSelectMode.SelectMode.SELECT and is_exact_match_autoselect and jisho_results[0].is_exact_match) or len(jisho_results) == 1:
                 if jisho_results[0].is_exact_match:
                     self.logger.warning(f"Found exact match for {word} !")
                 output.append(jisho_results[0])
                 continue
-            elif mode == self.SelectMode.ALL:
+            elif mode == JishoSelectMode.SelectMode.ALL:
                 [output.append(rez) for rez in jisho_results]
                 continue
 
@@ -76,9 +53,6 @@ class JishoScrapper(Scrapper):
         if not expr_with_links:
             self.logger.info("No soundlinks found in selected expressions, skipping...")
             return output
-        if auto_download == None:
-            auto_download = re.match(r'(?i:^y(es)?$)', self._checkAbortResponse(grey('\033[1mAuto-download sound\033[0m\033[2m when found ?') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None
-            self.logger.info(f"Auto-downloading sound is {'en' if auto_download else 'dis'}abled")
         
         if auto_download:
             print(grey(italic(f'Downloading {len(expr_with_links)} audio files...\n')))
@@ -98,26 +72,13 @@ class JishoScrapper(Scrapper):
         return output
         
     @oopsable()
-    async def selectMeanings(self, selected_expr: list[JishoResult], mode: SelectMode = SelectMode.NONE) -> list[JishoResult]:
-        # Auto-select meanings mode
-        while mode == self.SelectMode.NONE:
-            clearConsole()
-            print(grey("Auto-select \033[1mmeaning\033[0m\033[2m mode"))
-            print(f"\t{bold('1')}. First only")
-            print(f"\t{bold('2')}. Select")
-            print(f"\t{bold('3')}. All")
-            response = re.match(r'[1-3]', self._checkAbortResponse(f'{grey("Select mode")} ({bold("1")}|{bold("2")}|{bold("3")}) {grey(": ")}'))
-            if response:
-                mode = self.SelectMode(int(response.group(0))-1)
-                self.logger.info(f"Auto-selecting definition mode is {mode.name}")
-
-        
+    async def selectMeanings(self, selected_expr: list[JishoResult], mode: JishoSelectMode.SelectMode = JishoSelectMode.SelectMode.NONE) -> list[JishoResult]:     
         output = selected_expr.copy()
         expression_question = True
         for i, expression in enumerate(output):
             clearConsole()
             print(f'[{expression.search_term} - {bold(expression.expression)} ({expression.furigana})] {grey(f"({i + 1}/{len(output)} search terms)")}\n')
-            if mode == self.SelectMode.SELECT and len(expression.meanings) > 1:
+            if mode == JishoSelectMode.SelectMode.SELECT and len(expression.meanings) > 1:
                 selected_def = []
                 self.promptForSelection(choices=[f"{italic(m.meaning)}" for m in expression.meanings], 
                                         input_text=(grey("Meanings indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')}) " if expression_question else "") + ": ",
@@ -128,7 +89,7 @@ class JishoScrapper(Scrapper):
                 expression_question = False
                 expression.meanings = selected_def
 
-            elif mode == self.SelectMode.FIRST:
+            elif mode == JishoSelectMode.SelectMode.FIRST:
 
                 expression.meanings = [expression.meanings[0]]
 

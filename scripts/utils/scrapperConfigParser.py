@@ -1,20 +1,12 @@
 from re import match
-from scripts.scrappers.JishoScrapper import JishoScrapper
-from scripts.scrappers.NeocitiesSelectMode import SentenceSelectMode
+from scripts.scrappers.JishoSelectMode import JishoSelectMode
+from scripts.scrappers.NeocitiesSelectMode import NeocitiesSelectMode
 
 class scrapperConfigParser():
     def __init__(self, filepath: str):
-        self.parsedParams = {
-            "autoselect_expression_mode": JishoScrapper.SelectMode.NONE,
-            "is_exact_match_autoselect": None,
-            "autoselect_meaning_mode": JishoScrapper.SelectMode.NONE,
-            "autoselect_sentence_mode": SentenceSelectMode(),
-            "enable_word_sound_download": True,
-            "auto_download_sounds": None
-        }
+        self.autoselect_definition = JishoSelectMode()
+        self.autoselect_sentence = NeocitiesSelectMode()
         self.max_results_displayed = 20
-
-
         with open(filepath, 'r') as f:
             lines = [l for l in f.readlines() if not match(r'^\#', l)]
             params = {}
@@ -24,31 +16,38 @@ class scrapperConfigParser():
                     continue
                 params[param_match.group(1)] = param_match.group(2)
             
-            assert isinstance(self.parsedParams["autoselect_sentence_mode"], SentenceSelectMode)
+            assert isinstance(self.autoselect_sentence, NeocitiesSelectMode)
             for key, item in params.items():
                 match key:
                     case "max_results_displayed":
                         self.max_results_displayed = self.parseInt(item)
                     case "expression_autoselect":
-                        self.parsedParams["autoselect_expression_mode"] = self.parseSelectMode(item)
+                        self.autoselect_definition.autoselect_expression_mode = self.parseSelectMode(item)
                     case "exact_match_autoselect":
-                        self.parsedParams["is_exact_match_autoselect"] = self.parseBool(item)
+                        self.autoselect_definition.is_exact_match_autoselect = self.parseBool(item)
                     case "meaning_autoselect":
-                        self.parsedParams["autoselect_meaning_mode"] = self.parseSelectMode(item)
+                        self.autoselect_definition.autoselect_meaning_mode = self.parseSelectMode(item)
                     case "word_audio_download":
-                        self.parsedParams["enable_word_sound_download"] = not item == "NO"
+                        self.autoselect_definition.enable_word_sound_download = not item == "NO"
                     case "word_audio_auto_download":
-                        self.parsedParams["auto_download_sounds"] = self.parseBool(item)
+                        self.autoselect_definition.auto_download_sounds = self.parseBool(item)
                     case "sentence_select_mode":
-                        self.parsedParams["autoselect_sentence_mode"].mode = self.parseSentenceSelectMode(item)
+                        self.autoselect_sentence.mode = self.parseSentenceSelectMode(item)
                     case "sentence_quantity":
-                        self.parsedParams["autoselect_sentence_mode"].quantity = self.parseInt(item)
+                        self.autoselect_sentence.quantity = self.parseInt(item)
                     case "sentence_min_length":
-                        self.parsedParams["autoselect_sentence_mode"].min_length = self.parseInt(item)
+                        self.autoselect_sentence.min_length = self.parseInt(item)
                     case "sentence_max_length":
-                        self.parsedParams["autoselect_sentence_mode"].max_length = self.parseInt(item)
+                        self.autoselect_sentence.max_length = self.parseInt(item)
                     case "sentence_len_distribution":
-                        self.parsedParams["autoselect_sentence_mode"].length_distribution = self.parseSentenceDistributionMode(item)
+                        self.autoselect_sentence.length_distribution = self.parseSentenceDistributionMode(item)
+                    case "auto_validate_random":
+                        self.autoselect_sentence.auto_validate_random = self.parseBool(item)
+
+        self.parsedParams = {
+            "jisho_mode": self.autoselect_definition,
+            "neocities_mode": self.autoselect_sentence,
+        }
     
     @staticmethod
     def parseInt(value: str) -> (int | None):
@@ -67,25 +66,25 @@ class scrapperConfigParser():
         
         
     @staticmethod
-    def parseSentenceSelectMode(value: str) -> SentenceSelectMode.SelectMode:
+    def parseSentenceSelectMode(value: str) -> NeocitiesSelectMode.SelectMode:
         value = match(r'^(MANUAL|AUTO)$', value)
         if not value:
-            return SentenceSelectMode.SelectMode.NONE
+            return NeocitiesSelectMode.SelectMode.NONE
         value = value.group(0)
-        return SentenceSelectMode.SelectMode(["MANUAL", "AUTO"].index(value))
+        return NeocitiesSelectMode.SelectMode(["MANUAL", "AUTO"].index(value))
     
     @staticmethod
-    def parseSentenceDistributionMode(value: str) -> SentenceSelectMode.LengthDistribution:
+    def parseSentenceDistributionMode(value: str) -> NeocitiesSelectMode.LengthDistribution:
         value = match(r'^(RANDOM|EVEN)$', value)
         if not value:
-            return SentenceSelectMode.LengthDistribution.NONE
+            return NeocitiesSelectMode.LengthDistribution.NONE
         value = value.group(0)
-        return SentenceSelectMode.LengthDistribution(["EVEN", "RANDOM"].index(value))
+        return NeocitiesSelectMode.LengthDistribution(["EVEN", "RANDOM"].index(value))
     
     @staticmethod
-    def parseSelectMode(value: str) -> JishoScrapper.SelectMode:
+    def parseSelectMode(value: str) -> JishoSelectMode.SelectMode:
         value = match(r'^(FIRST|SELECT|ALL)$', value)
         if not value:
-            return JishoScrapper.SelectMode.NONE
+            return JishoSelectMode.SelectMode.NONE
         value = value.group(0)
-        return JishoScrapper.SelectMode(["FIRST", "SELECT", "ALL"].index(value))
+        return JishoSelectMode.SelectMode(["FIRST", "SELECT", "ALL"].index(value))
