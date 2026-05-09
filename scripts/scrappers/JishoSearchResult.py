@@ -1,144 +1,76 @@
-# from selenium.webdriver import Firefox
-# from selenium.webdriver.remote.webelement import WebElement
-# from selenium.webdriver.common.by import By
-# from selenium.common.exceptions import NoSuchElementException
-from playwright.async_api import Page, Locator
+from playwright.async_api import Page, ElementHandle
 from re import findall, match
 from scripts.utils.furiganaToRomaji import convertToRomaji
 import requests
 import uuid
 import os
 import asyncio
+from collections import namedtuple
 
 audio_folder = "./audio/words/"
+def parseFurigana(expression, kanjis, furiganas):
+    output = ""
+    for c in expression:
+        if c in kanjis and furiganas:
+            output += furiganas.pop(0)
+        else:
+            output += c
+    return output
 
-class Sentence():
-    def __init__(self, japanese, english):
-        self.japanese = japanese
-        self.english = english
 
-class Meaning():
-    def __init__(self, tag:str, meaning:str, sentences: list[Sentence]):
-        self.tag = tag
-        self.meaning = meaning
-        self.sentences = sentences
 
-class JishoSearchResultElement():
-    def __init__(self, driver: Page, search_term: str, search_result: Locator):
-        self.browser = driver
-        self.search_result = search_result
+JishoSearchResultRaw = namedtuple('JishoSearchResult', ['expression', 'furiganas', 'meanings', 'tags', 'soundlink', 'inflectionlink'], defaults=[str, str, list[dict[str, str | None]], list[str], str, ElementHandle])
+Meaning = namedtuple('Meaning', ['tag', 'meaning'], defaults=[str, str])
+class JishoResult():
+    def __init__(self, raw: JishoSearchResultRaw, search_term: str):
         self.search_term = search_term
-    
-    async def async_init(self):
-        self.expression = await self.search_result.locator(".text").inner_text()
-        
+        self.expression = raw.expression
         self.kanjis = findall(r'[一-龯]', self.expression)
-        self.furigana = await self.parseFurigana(self.search_result)
+        self.furigana = parseFurigana(raw.expression, self.kanjis, raw.furiganas)
         self.romaji = convertToRomaji(self.furigana)
         self.is_exact_match = self.search_term in (self.expression, self.furigana, self.romaji) 
-
-        #　Expressions
-        meanings_tags_cors = [tag.inner_text() for tag in await self.search_result.locator(".concept_light-meanings").locator(".meaning-tags").all()]
-        meanings_tags = await asyncio.gather(*meanings_tags_cors)
-        meanings_wrapper = await self.search_result.locator(".concept_light-meanings").locator(".meaning-wrapper").all()
-        
-        self.meanings: list[Meaning] = []
-        for tag, meaning_wrapper in zip(meanings_tags, meanings_wrapper):
-            if tag in ("Notes", "Other forms"):
-                continue
-            japanese_sentences = []
-            english_sentences = []
-            # try:
-            meaning_sentences_locator = meaning_wrapper.locator(".sentences").locator(".sentence")
-            if await meaning_sentences_locator.count() > 0:
-                meaning_sentences = await meaning_sentences_locator.all()
-                japanese_sentences_cors = [s.locator(".japanese").inner_text() for s in meaning_sentences]
-                japanese_sentences = await asyncio.gather(*japanese_sentences_cors)
-                english_sentences_cors = [s.locator(".english").inner_text() for s in meaning_sentences]
-                english_sentences = await asyncio.gather(*english_sentences_cors)
-            # except NoSuchElementException as e:
-                # pass
-            new_meaning = Meaning(tag=tag,
-                                  meaning=await meaning_wrapper.locator(".meaning-meaning").inner_text(),
-                                  sentences=[Sentence(jap, eng) for jap, eng in zip(japanese_sentences, english_sentences)])
-
-            self.meanings.append(new_meaning)
-            all_sentences = self.getAllSentences()
-            self.sentence = None if not all_sentences else all_sentences[0]
-        
-        tags_cors = [t.inner_text() for t in await self.search_result.locator(".concept_light-tag").all()]
-        self.tags = await asyncio.gather(*tags_cors)
+        self.meanings = [Meaning(r['tag'], r['meaning']) for r in raw.meanings]
+        self.tags = raw.tags
         self.JLPT = 0
         for tag in self.tags:
             jlpt_tag = match(r'^jlpt n([1-5])$', tag)
             if jlpt_tag:
                 self.JLPT = int(jlpt_tag.group(1))
                 break
-        
-        # try:
-        soundlink_locator = self.search_result.locator('source[type="audio/mpeg"]')
-        if await soundlink_locator.count() == 0:
-            self.soundlink = None
-        else:
-            self.soundlink = "https:" + await soundlink_locator.get_attribute("src")
+        self.soundlink = raw.soundlink
+        self.inflectionlink = raw.inflectionlink
+        pass
 
-        # except NoSuchElementException:
-        #     self.soundlink = None
-        self.soundfile = None
-
+    async def queryInflection(self, page: Page):
+        if not self.inflectionlink:
+            self.inflections = None
+            return
         self.inflections = {}
-        # try:
-        inflections_link = self.search_result.locator(".show_inflection_table")
-        if await inflections_link.count() > 0:
-            await inflections_link.click()
-            inflection_table = self.browser.locator("#inflection_modal")
-            close_button = inflection_table.locator(".close-reveal-modal")
-            inflection_tbody = inflection_table.locator("tbody").last
-            inflection_rows: list[Locator] = await inflection_tbody.locator("tr").all()
-            inflection_cells_cors = [td.inner_text() for td in await inflection_tbody.locator("td").all()]
-            inflection_cells = await asyncio.gather(*inflection_cells_cors)
-            while any([td == '' for td in inflection_cells]):
-                await asyncio.sleep(0.05)
-                inflection_rows: list[Locator] = await inflection_tbody.locator("tr").all()
-                inflection_cells_cors = [td.inner_text() for td in await inflection_tbody.locator("td").all()]
-                inflection_cells = await asyncio.gather(*inflection_cells_cors)
-            
-            for tr in inflection_rows:
-                cells_cors = [td.inner_text() for td in await tr.locator("td").all()]
-                cells = await asyncio.gather(*cells_cors)
-                self.inflections[cells[0]] = cells[1:]
-            await close_button.click()
-            while await inflection_table.is_visible():
-                await asyncio.sleep(0.05)
-        # except (NoSuchElementException, IndexError):
-        #     pass
+        link = await page.query_selector(self.inflectionlink)
+        await link.click()
+        cell_path = "#inflection_modal > .modal_content > .inflection_table > tbody:nth-of-type(2) > tr > td"
+        cells = await page.evaluate("() => {return [...document.querySelectorAll('"+cell_path+"')].map(x => x.innerText)}")
+        if any([c == '' for c in cells]):
+            await page.wait_for_function("() => [...document.querySelectorAll('"+cell_path+"')].every(x => x != '')", timeout=1500)
+            cells = await page.evaluate("() => {return [...document.querySelectorAll('"+cell_path+"')].map(x => x.innerText)}")
+        for i in range(int(len(cells)//3)):
+            s_i = i * 3
+            self.inflections[cells[s_i]] = cells[s_i + 1:s_i + 3]
 
-        return self
+        close = await page.query_selector("#inflection_modal > a:nth-child(2)")
+        if not await close.is_visible():
+            await page.wait_for_function("(el) => el.checkVisibility()", arg=close, timeout=1500)
+        await close.click()
+        await page.wait_for_function("(el) => !el.checkVisibility()", arg=close, timeout=1500)
 
+        return self.inflections
 
-    def getAllSentences(self) -> list[Sentence]:
-        return [m.sentences for m in self.meanings]
 
     def getFlattenedListOfInflection(self) -> list[str]:
+        if not self.inflections:
+            return []
         items = list(self.inflections.values())
         return [infl for tense in items for infl in tense]
-    
-    async def parseFurigana(self, search_result: Locator) -> str:        
-        # try:
-        furigana_locator = search_result.locator(".furigana").locator(".kanji")
-        if await furigana_locator.count() == 0:
-            return ""
-        furiganas_cors = [f.inner_text() for f in await furigana_locator.all()]
-        furiganas = await asyncio.gather(*furiganas_cors)
-        # except NoSuchElementException:
-        #     return self.expression
-        output = ""
-        for c in self.expression:
-            if c in self.kanjis and furiganas:
-                output += furiganas.pop(0)
-            else:
-                output += c
-        return output
     
     async def downloadSound(self) -> str:
         if not self.soundlink:

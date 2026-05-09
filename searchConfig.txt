@@ -48,13 +48,13 @@ max_results_displayed=20
 #_Expressions________________________________________________
 
 # NONE, FIRST, SELECT, ALL
-expression_autoselect=ALL
+expression_autoselect=SELECT
 
 # NONE, YES, NO
 exact_match_autoselect=NONE
 
 # NONE, FIRST, SELECT, ALL
-meaning_autoselect=ALL
+meaning_autoselect=SELECT
 
 
 #_Audio______________________________________________________
@@ -69,7 +69,7 @@ word_audio_auto_download=YES
 #_Sentences__________________________________________________
 
 # NONE, AUTO, MANUAL
-sentence_select_mode=NONE
+sentence_select_mode=MANUAL
 
 # NONE, [0-20]
 sentence_quantity=NONE

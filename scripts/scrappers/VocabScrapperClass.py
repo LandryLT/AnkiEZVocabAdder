@@ -1,9 +1,10 @@
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole
 from typing import Callable
-
 import logging
 # from scrappers import JishoSearchResultElement
-from scripts.scrappers import NeocitiesSearchResultElement, SentenceSelectMode, JishoSearchResultElement
+from scripts.scrappers import JishoResult, JishoSearchResultRaw
+# from scripts.scrappers import NeocitiesSearchResultElement, SentenceSelectMode, JishoSearchResultElement
+from scripts.scrappers import SentenceSelectMode, NeocitiesResult
 from re import match, findall, finditer, compile
 from time import sleep
 from enum import Enum
@@ -15,6 +16,7 @@ tqdm_bar_format = grey('{desc}: {percentage:3.0f}%|{bar:20}|')
 import functools
 import asyncio
 from playwright.async_api import async_playwright
+
 
 def oopsable():
     def wrapper(f):
@@ -68,7 +70,7 @@ class VocabScrapper():
                 print(f'{i+1}. {definition.meaning}')
 
     @oopsable()
-    async def selectExpressions(self, vocab_list: list[str], mode: SelectMode = None, is_exact_match_autoselect: bool = False) -> list[JishoSearchResultElement]:
+    async def selectExpressions(self, vocab_list: list[str], mode: SelectMode = None, is_exact_match_autoselect: bool = False) -> list[JishoResult]:
         # Auto-select expression mode
         clearConsole()
         while mode == self.SelectMode.NONE:
@@ -109,27 +111,17 @@ class VocabScrapper():
             elif mode == self.SelectMode.ALL:
                 [output.append(rez) for rez in jisho_results]
                 continue
-            
-            # num_of_results = len(jisho_results)
-            # # Too many results
-            # if num_of_results > 10:
-            #     response = self._checkAbortResponse(grey(f'{num_of_results} results, how many to display ? '))
-
-            #     response = match(r'^\d+$', response)
-            #     num_of_choices = num_of_results if response == None else int(response.group(0))
-            #     jisho_results = jisho_results[:min(num_of_choices, num_of_results)]
-
 
             self.promptForSelection(choices=[f"{bold(expr.expression)} ({expr.romaji}):\t\"{italic(expr.meanings[0].meaning)}\" {grey(f'(1/{len(expr.meanings)} meanings)')}" for expr in jisho_results], 
-                                    input_text=grey("Expressions indices to keep ") + (f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')}) " if expression_question else "") + ": ",
+                                    input_text=(grey("Expressions indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')} {grey('or')} {bold('none')}) " if expression_question else "") + ": ",
                                     header=header+grey(f"\nPlease select expressions to keep"),
                                     callback=lambda i: output.append(jisho_results[i]))
             
-            # expression_question = False
+            expression_question = False
         return output
     
     @oopsable()
-    async def downloadSounds(self, selected_expr: list[JishoSearchResultElement], enable:bool = True, auto_download: bool = None):
+    async def downloadSounds(self, selected_expr: list[JishoResult], enable:bool = True, auto_download: bool = None) -> list[JishoResult]:
         output = selected_expr.copy()
         expr_with_links = [expr for expr in output if expr.soundlink]
         if not enable:
@@ -160,7 +152,7 @@ class VocabScrapper():
         return output
         
     @oopsable()
-    async def selectMeanings(self, selected_expr: list[JishoSearchResultElement], mode: SelectMode = SelectMode.SELECT) -> list[JishoSearchResultElement]:
+    async def selectMeanings(self, selected_expr: list[JishoResult], mode: SelectMode = SelectMode.SELECT) -> list[JishoResult]:
         # Auto-select meanings mode
         while mode == self.SelectMode.NONE:
             clearConsole()
@@ -175,16 +167,19 @@ class VocabScrapper():
 
         
         output = selected_expr.copy()
+        expression_question = True
         for i, expression in enumerate(output):
             clearConsole()
             print()
             if mode == self.SelectMode.SELECT and len(expression.meanings) > 1:
                 selected_def = []
                 self.promptForSelection(choices=[f"{italic(m.meaning)}" for m in expression.meanings], 
-                                        input_text=grey(": "),
+                                        input_text=(grey("Meanings indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')}) " if expression_question else "") + ": ",
                                         header=f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(output)} expressions to check)")}\n'+
                                                     grey(f"\nPlease select meanings to keep"),
-                                        callback=lambda i: selected_def.append(expression.meanings[i]))
+                                        callback=lambda i: selected_def.append(expression.meanings[i]),
+                                        use_none=False)
+                expression_question = False
                 expression.meanings = selected_def
 
             elif mode == self.SelectMode.FIRST:
@@ -194,7 +189,7 @@ class VocabScrapper():
         return output
     
     @oopsable()
-    async def selectSentence(self, selected_expr: list[JishoSearchResultElement], mode: SentenceSelectMode = None) -> list[JishoSearchResultElement]:
+    async def selectSentence(self, selected_expr: list[JishoResult], mode: SentenceSelectMode = None) -> list[JishoResult]:
         clearConsole()
         while mode == None or mode.mode == SentenceSelectMode.SelectMode.NONE:
             clearConsole()
@@ -209,10 +204,10 @@ class VocabScrapper():
 
         output = selected_expr.copy()
         selected_sentences = []
-        
+        expression_question = True
         for i, expression in enumerate(selected_expr):
             search_term = f'{"|".join([expression.expression]+expression.getFlattenedListOfInflection())}'
-            neocities_rez = await self.neocitiesSearchTerm(search_term, expression.expression, f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(output)} sentences to set)")}\n')
+            neocities_rez = await self.neo_cities_search_term(search_term, expression.expression, f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(output)} sentences to set)")}\n')
             if not neocities_rez:
                 continue
             clearConsole()
@@ -223,78 +218,123 @@ class VocabScrapper():
                         choice = choice[:m.start()] + bold(choice[m.start():m.end()]) + choice[m.end():]
                     choices[ind] = choice
                 self.promptForSelection(choices=choices,
-                                        input_text=': ',
+                                        input_text=(grey("Sentences indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')} {grey('or')} {bold('none')}) " if expression_question else "") + ": ",
                                         header=f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(output)} sentences to set)")}\n',
                                         callback=lambda i: selected_sentences.append(neocities_rez[i]))
+                expression_question = False
         return output
 
-    async def jishoSearchTerm(self, search_term: str, header: str) -> list[JishoSearchResultElement]:
+    async def jishoSearchTerm(self, search_term: str, header: str) -> list[JishoResult]:
         clearConsole()
         print(header)
         print(italic(grey(f'Loading from jisho.org...\n')))
         await self.page.goto(self._jishosearch(search_term))
-        search_results = await self.page.locator("#primary").locator("xpath=./div/div").all()
-        if not search_results:
-            self.logger.warning(f'Searching for {bold(f"{search_term} returned no results")}, skipping...')
-            return
-        
-        self.logger.info(f'Searching for {bold(search_term)} [{len(search_results)} results]')
-        jishos = [JishoSearchResultElement(self.page, search_term, r) for r in search_results]
-        jishos_cors = [j.async_init() for j in jishos]
-        output = await tqdm.gather(*jishos_cors, bar_format=tqdm_bar_format)
-        # for i, r in enumerate(search_results):
-        #     clearConsole()
-        #     print(header)
-        #     print(italic(grey(f'Loading {i}/{len(search_results)} expressions from jisho.org...')))
-        #     output.append(JishoSearchResultElement(self.page, r, search_term))
+        dict_rez = await self.page.evaluate("""() => {
+                                                function getDomPath(el) {
+                                                    if (!(el instanceof Element)) return null;
+                                                    const path = [];
+                                                    while (el && el.nodeType === Node.ELEMENT_NODE) {
+                                                        let selector = el.nodeName.toLowerCase();
+
+                                                        // Prefer ID if available
+                                                        if (el.id) {
+                                                        selector += `#${CSS.escape(el.id)}`;
+                                                        path.unshift(selector);
+                                                        break;
+                                                        }
+
+                                                        // Add classes
+                                                        if (el.classList.length) {
+                                                        selector += [...el.classList]
+                                                            .map(cls => `.${CSS.escape(cls)}`)
+                                                            .join('');
+                                                        }
+
+                                                        // Add nth-of-type for uniqueness
+                                                        let sibling = el;
+                                                        let nth = 1;
+
+                                                        while ((sibling = sibling.previousElementSibling)) {
+                                                        if (sibling.nodeName === el.nodeName) nth++;
+                                                        }
+
+                                                        selector += `:nth-of-type(${nth})`;
+
+                                                        path.unshift(selector);
+                                                        el = el.parentElement;
+                                                    }
+
+                                                    return path.join(' > ');
+                                                }
+                                                return [...document.querySelectorAll('#primary > div > div')].map((el) => ({
+                                                    expression: el.querySelector('.text')?.innerText ?? '',
+                                                    furiganas: [...el.querySelectorAll('.furigana .kanji')].map(x => x.innerText),
+                                                    meanings: [...el.querySelectorAll('.concept_light-meanings .meanings-wrapper')].map(m => ({
+                                                        tag: m.querySelector('.meaning-tags')?.innerText ?? '',
+                                                        meaning: m.querySelector('.meaning-meaning')?.innerText ?? ''
+                                                    })),
+                                                    tags: [...el.querySelectorAll('.concept_light-tag')].map(x => x.innerText),
+                                                    soundlink: el.querySelector('source[type="audio/mpeg"]')?.src ?? null,
+                                                    inflectionlink: getDomPath(el.querySelector('.show_inflection_table')) ?? null
+                                                }))
+                                            }""")
+        output = [JishoResult(JishoSearchResultRaw(**rez), search_term) for rez in dict_rez]
+        [await rez.queryInflection(self.page) for rez in output]
         return output
     
-    async def neocitiesSearchTerm(self, search_term: str, expression: str, header: str) -> list[NeocitiesSearchResultElement]:
+    async def neo_cities_search_term(self, search_term: str, expression: str, header: str) -> list[NeocitiesResult]:
         clearConsole()
         print(italic(grey(f'Loading sentencesearch.neocities.org...')))
         await self.page.goto(self._neocitiessearch(search_term))
-        while not await self.page.locator("#results-info").is_visible():
+        if not await self.page.evaluate("() => document.querySelector('#results-info').checkVisibility()"):
             await self.page.locator("#searchButton").click()
-            await asyncio.sleep(0.05)
-        total_results = int(await self.page.locator("#num-results").inner_text())
-        while not await self.page.locator("#results-list-end").is_visible():
-            await self.page.evaluate("() => window.scrollTo(0, document.body.scrollHeight);")
-            search_results = await self.page.locator("#search-results-list\div").all()
-            clearConsole()
-            print(header)
-            print(italic(grey(f'Loading {len(search_results)}/{total_results} sentences from sentencesearch.neocities.org...')))
-            await asyncio.sleep(0.05)
+            await self.page.wait_for_function("() => document.querySelector('#results-info').checkVisibility()")
+        total_results = int(await self.page.evaluate("document.querySelector('#num-results').innerText"))
         clearConsole()
         print(header)
-        search_results_locator = self.page.locator("#search-results-list\div")
-        if await search_results_locator.count() == 0:
+        if not total_results:
             self.logger.warning(f'Searching for {bold(f"{expression} returned no results")}, skipping...')
-            return 
-        search_results = await search_results_locator.all()
-        print(italic(grey(f'Loaded {len(search_results)} sentences from sentencesearch.neocities.org...\n')))
-        self.logger.info(f'Searching for {bold(expression)} [{len(search_results)} results]\n')
-        
-        async def scrap(i, rez):
-            # clearConsole()
-            # print(header)
-            # print(italic(grey(f'Loaded {len(search_results)} sentences from sentencesearch.neocities.org...')))
-            # print(italic(grey(f'Scrapping {i} sentences from loaded sentences...')))
-            elem = await NeocitiesSearchResultElement(rez, search_term).async_init()
-            if elem.japanese and elem.english:
-                return elem
-            return None
-        
-        coroutines = [scrap(i, rez) for i, rez in enumerate(search_results)]
-        output = await list(tqdm.gather(*coroutines, bar_format=tqdm_bar_format))
-        # with ThreadPoolExecutor() as executor:
-        #     output = executor.map(scrap, enumerate(search_results))
-        #     executor.shutdown(wait=True)
-        
-        return [e for e in output if e]
-        
+            return []
 
+        clearConsole()
+        print(header)        
+        return await self.load_all_neocities_results()
 
-    def promptForSelection(self, choices: list[str], input_text: str, header: str, callback: Callable[[int], None]):
+    async def load_all_neocities_results(self)  -> list[NeocitiesResult]:
+        previous_count = 0
+        total_rez = int(await self.page.evaluate("() => {return document.querySelector('#num-results').innerText}"))
+        print(grey(f'Gathering {total_rez} sentences from {italic("sentencesearch.neocities.org...")}'))
+        with tqdm(total=total_rez, bar_format=tqdm_bar_format+grey(' [{n_fmt}/{total_fmt}]')) as pbar:
+            while True:
+                current_count = await self.page.evaluate("() => {return document.querySelectorAll('#search-results-list .search-result').length}")
+                pbar.update(current_count - previous_count)
+                if current_count == previous_count:
+                    break
+                previous_count = current_count
+                await self.page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")
+                try:
+                    await self.page.wait_for_function(
+                        expression="prev => {return document.querySelectorAll('#search-results-list .search-result').length > prev}",
+                        arg=previous_count,
+                        timeout=1500
+                    )
+                except:
+                    break
+            output = await self.page.evaluate("""
+            () => {
+                return [...document.querySelectorAll('#search-results-list .search-result')]
+                    .map(el => ({
+                        japanese: el.querySelector('.jap')?.innerText || '',
+                        english: el.querySelector('.eng')?.innerText || '',
+                        audio_link: el.querySelector('.audioButton')?.href || ''
+                    }))
+                    .filter(x => x.japanese && x.english);
+            }
+            """)
+
+        return [NeocitiesResult(**rez) for rez in output]
+
+    def promptForSelection(self, choices: list[str], input_text: str, header: str, callback: Callable[[int], None], use_none: bool = True):
         start_index = 0
         num_of_choices = len(choices)
         while True:
@@ -319,6 +359,9 @@ class VocabScrapper():
                 if match(r'\ba\b', response):
                     output = list(range(len(choices)))
                     break
+                if match(r'(?i:\bnone\b)', response) and use_none:
+                    output = []
+                    break
             if match(r'^((,| )*\b\d+\b(,| )*)+$', response):
                 output = [int(r) for r in findall(r'\b\d+\b', response)]
                 break
@@ -330,7 +373,7 @@ class VocabScrapper():
         # options.add_argument("--headless=new")
         self.logger.info("Launching Playwright...")
         self.driver = await async_playwright().start()
-        self.browser = await self.driver.firefox.launch()
+        self.browser = await self.driver.firefox.launch(headless=True)
         self.page = await self.browser.new_page()
         self.logger.info("Playwright Headless Firefox driver launched !")
 

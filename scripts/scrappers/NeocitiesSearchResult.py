@@ -1,13 +1,9 @@
-# from selenium.webdriver import Firefox
-# from selenium.webdriver.remote.webelement import WebElement
-# from selenium.webdriver.common.by import By
-# from selenium.common.exceptions import NoSuchElementException
 from enum import Enum
 from re import match
 from scripts.utils.printingUtils import grey, bold
 import scripts.scrappers as scrappers
-from scripts.scrappers.JishoSearchResult import Sentence
-from playwright.async_api import Locator
+from collections import namedtuple
+NeocitiesResult = namedtuple('NeocitiesResult', ["japanese", "english", "audio_link"])
 
 class SentenceSelectMode():
     class SelectMode(Enum):
@@ -73,15 +69,3 @@ class SentenceSelectMode():
             if not response:
                 continue
             self.length_distribution = SentenceSelectMode.LengthDistribution(int(response.group(0))-1)
-
-
-class NeocitiesSearchResultElement():
-    def __init__(self, search_result: Locator, expression: str):
-        self.expression = expression
-        self.search_result = search_result
-    
-    async def async_init(self):
-        self.japanese = await self.search_result.locator(".jap").inner_text()
-        self.english = await self.search_result.locator(".eng").inner_text()
-        self.audio_link = await self.search_result.locator(".audioButton").get_attribute("href")
-        return self

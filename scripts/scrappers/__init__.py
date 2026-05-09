@@ -1,3 +1,3 @@
-from .JishoSearchResult import JishoSearchResultElement
-from .NeocitiesSearchResult import NeocitiesSearchResultElement, SentenceSelectMode
+from .JishoSearchResult import JishoResult, JishoSearchResultRaw
+from .NeocitiesSearchResult import SentenceSelectMode, NeocitiesResult
 from .VocabScrapperClass import VocabScrapper
