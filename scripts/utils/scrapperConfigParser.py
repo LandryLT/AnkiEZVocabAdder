@@ -43,6 +43,8 @@ class scrapperConfigParser():
                         self.autoselect_sentence.length_distribution = self.parseSentenceDistributionMode(item)
                     case "auto_validate_random":
                         self.autoselect_sentence.auto_validate_random = self.parseBool(item)
+                    case "download_sentence_audio":
+                        self.autoselect_sentence.download_audio = self.parseBool(item)
 
         self.parsedParams = {
             "jisho_mode": self.autoselect_definition,

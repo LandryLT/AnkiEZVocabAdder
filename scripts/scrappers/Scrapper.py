@@ -43,7 +43,11 @@ class Scrapper():
             raise Scrapper.Quit
         return response
     
-    def promptForSelection(self, choices: list[str], input_text: str, header: str, callback: Callable[[int], None], use_none: bool = True):
+    @staticmethod
+    def defErrorCallback(i):
+        pass
+
+    def promptForSelection(self, choices: list[str], input_text: str, header: str, callback: Callable[[int], None], use_none: bool = True, errorCallback: Callable[[int], None] = defErrorCallback):
         start_index = 0
         num_of_choices = len(choices)
         while True:
@@ -60,19 +64,20 @@ class Scrapper():
                 start_index = 0 if end_index >= num_of_choices else (self.max_rez_display + start_index) % num_of_choices
                 continue
             if re.findall(r'\b[a-zA-Z]+\b', response):
-                if re.match(r'\bp\b', response):
+                if re.match(r'(?i:\bp(rev(ious)?)?\b)', response):
                     start_index = start_index - self.max_rez_display
                     if start_index < 0:
                         start_index = int(math.floor(num_of_choices/(self.max_rez_display))*self.max_rez_display)
                     continue
-                if re.match(r'\ba\b', response):
+                if re.match(r'(?i:\ba(ll)?\b)', response):
                     output = list(range(len(choices)))
                     break
-                if re.match(r'(?i:\bnone\b)', response) and use_none:
+                if re.match(r'(?i:\bn(one)?\b)', response) and use_none:
                     output = []
                     break
             if re.match(r'^((,| )*\b\d+\b(,| )*)+$', response):
                 output = [int(r) for r in re.findall(r'\b\d+\b', response)]
                 break
-        [callback(i) if i < len(choices) else "" for i in output]
+        [callback(i) if i < len(choices) else errorCallback(i) for i in sorted(output, reverse=True)]
         return
+    

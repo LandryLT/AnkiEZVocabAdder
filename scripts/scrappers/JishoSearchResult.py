@@ -7,7 +7,7 @@ import os
 import asyncio
 from collections import namedtuple
 
-audio_folder = "./audio/words/"
+word_audio_folder = "./audio/words/"
 def parseFurigana(expression, kanjis, furiganas):
     output = ""
     for c in expression:
@@ -38,6 +38,7 @@ class JishoResult():
                 self.JLPT = int(jlpt_tag.group(1))
                 break
         self.soundlink = raw.soundlink
+        self.soundfile = None
         self.inflectionlink = raw.inflectionlink
         pass
 
@@ -79,7 +80,7 @@ class JishoResult():
         if not self.soundlink:
             return
         download_file_name = f'{self.expression}_{str(uuid.uuid1())}.mp3'
-        download_file_path = audio_folder + download_file_name
+        download_file_path = word_audio_folder + download_file_name
         r = await asyncio.get_event_loop().run_in_executor(None, requests.get, self.soundlink)
         with open(download_file_path, "wb") as file:
             for chunk in r.iter_content():

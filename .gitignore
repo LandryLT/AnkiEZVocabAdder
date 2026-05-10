@@ -3,3 +3,4 @@ __pycache__
 .vscode
 vocab2add.txt
 *.mp3
+*.png

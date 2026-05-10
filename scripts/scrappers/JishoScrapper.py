@@ -36,7 +36,7 @@ class JishoScrapper(Scrapper):
                 continue
 
             self.promptForSelection(choices=[f"{bold(expr.expression)} ({expr.romaji}):\t\"{italic(expr.meanings[0].meaning)}\" {grey(f'(1/{len(expr.meanings)} meanings)')}" for expr in jisho_results], 
-                                    input_text=(grey("Expressions indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')} {grey('or')} {bold('none')}) " if expression_question else "") + ": ",
+                                    input_text=(grey("Expressions indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')+grey(italic('(ll)'))} {grey('or')} {bold('n')+grey(italic('(one)'))}) " if expression_question else "") + ": ",
                                     header=header+grey(f"\nPlease select expressions to keep"),
                                     callback=lambda i: output.append(jisho_results[i]))
             
@@ -81,7 +81,7 @@ class JishoScrapper(Scrapper):
             if mode == JishoSelectMode.SelectMode.SELECT and len(expression.meanings) > 1:
                 selected_def = []
                 self.promptForSelection(choices=[f"{italic(m.meaning)}" for m in expression.meanings], 
-                                        input_text=(grey("Meanings indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')}) " if expression_question else "") + ": ",
+                                        input_text=(grey("Meanings indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')+grey(italic('(ll)'))}) " if expression_question else "") + ": ",
                                         header=f'[{expression.search_term} - {bold(expression.expression)} ({expression.furigana})] {grey(f"({i + 1}/{len(output)} expressions to check)")}\n'+
                                                     grey(f"\nPlease select meanings to keep"),
                                         callback=lambda i: selected_def.append(expression.meanings[i]),

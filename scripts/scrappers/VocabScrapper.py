@@ -1,19 +1,25 @@
-from scripts.utils.printingUtils import bold, italic, grey, clearConsole
+from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_bar_format
 import logging
-from scripts.scrappers import NeocitiesSelectMode, JishoScrapper, NeocitiesScrapper, JishoSelectMode
+from scripts.scrappers import NeocitiesSelectMode, JishoScrapper, NeocitiesScrapper, JishoSelectMode, JishoResult, NeocitiesResult, KanjiScrapper, KanjiResults
 from playwright.async_api import async_playwright
+from collections import namedtuple
+import random
+from tqdm.asyncio import tqdm
 
+VocabScraperResult = namedtuple('VocabScraperResult', ['jisho', 'neocities'], defaults=[JishoResult, list[NeocitiesResult]])
 
 class VocabScrapper():
     logger = logging.getLogger(__name__)
     
     def __init__(self, max_display):
         self.max_rez_display = max_display
+        self.all_kanjis = []
     
     async def searchVocabList(self, vocab_list: list[str], 
                        jisho_mode: JishoSelectMode, 
-                       neocities_mode: NeocitiesSelectMode): 
-            
+                       neocities_mode: NeocitiesSelectMode,
+                       printout_rez = False): 
+        
         # Navigate through vocab list
         jisho_mode.setAutoselectExpressionMode()
         selected_expr = await self.jisho.selectExpressions(vocab_list, jisho_mode.autoselect_expression_mode, jisho_mode.is_exact_match_autoselect)
@@ -22,19 +28,48 @@ class VocabScrapper():
         jisho_mode.setAutoselectMeaningMode()
         selected_expr = await self.jisho.selectMeanings(selected_expr, jisho_mode.autoselect_meaning_mode)
         [expr.setUsuallyWrittenInKana() for expr in selected_expr]
+        [[self.all_kanjis.append(k) for k in expr.kanjis] for expr in selected_expr]
+        self.all_kanjis = list(set(self.all_kanjis))
+
         neocities_mode.setAutoMode()
-        selected_expr = await self.neocities.selectSentence(selected_expr, neocities_mode)
+        selected_sentences = await self.neocities.selectSentence(selected_expr, neocities_mode)
+        await self.neocities.downloadSounds(selected_sentences, neocities_mode.download_audio)
+        selected_rez = [VocabScraperResult(jisho, neocities) for jisho, neocities in zip(selected_expr, selected_sentences)]
+        
+        if not printout_rez:
+            return selected_rez
         
         clearConsole()
         print(f'{bold("[SEARCH RESULTS]")}')
-        for expr in selected_expr:
-            print(f'\n{bold(expr.expression)} - {expr.furigana}')
-            for i, definition in enumerate(expr.meanings):
-                print(f'{i+1}. {definition.meaning}')
+        for rez in selected_rez:
+            has_audio = rez.jisho.soundfile != None
+            has_jlpt = rez.jisho.JLPT > 0
+            print('__________________________________________________________')
+            print("\n"+f'{bold(rez.jisho.expression)} - {rez.jisho.furigana} ' + grey(('[' + ('\033[3mAudio\033[0m\033[2m' if has_audio else "")+(" - " if has_audio and has_jlpt else "")+("\033[3mJLPT N"+str(rez.jisho.JLPT)+"\033[0m\033[2m" if has_jlpt else "")+']') if has_audio or has_jlpt else ''))
+            for i, definition in enumerate(rez.jisho.meanings):
+                print("\t"+f'{grey(definition.tag)}')
+                print("\t"+f'{i+1}. {definition.meaning}')
+            
+            if rez.neocities:
+                random_sentence: NeocitiesResult = random.choice(rez.neocities)
+                print(grey("\n\tExample sentence :"))
+                NeocitiesScrapper.boldSearchTerm([random_sentence.japanese], random_sentence.search_term)
+                print(italic("\t"+random_sentence.japanese))
+                print(italic("\t"+random_sentence.english))
+
+    async def searchForKanjis(self, kanjis: list[str]):
+        all_kanji_rez: list[KanjiResults] = []
+        for i, k in enumerate(kanjis):
+            clearConsole()
+            header = f'[{bold(k)}] ' + grey(f'({i}/{len(kanjis)} kanjis)') + "\n"
+            all_kanji_rez.append(await self.jisho_kanji.jishoKanjiSearch(k, header))
+        clearConsole()
+        print(grey(italic(f"Downloading {len(all_kanji_rez)} kanji strokes images")))
+        img_download_cors = [k.downloadImage() for k in all_kanji_rez]
+        await tqdm.gather(*img_download_cors, bar_format=tqdm_bar_format)
+        pass
 
     async def __aenter__(self):
-        # options = Options()
-        # options.add_argument("--headless=new")
         self.logger.info("Launching Playwright...")
         self.driver = await async_playwright().start()
         self.browser = await self.driver.firefox.launch(headless=True)
@@ -42,6 +77,7 @@ class VocabScrapper():
         self.logger.info("Playwright Headless Firefox driver launched !")
         self.jisho = JishoScrapper(self.page, self.max_rez_display)
         self.neocities = NeocitiesScrapper(self.page, self.max_rez_display)
+        self.jisho_kanji = KanjiScrapper(self.page, self.max_rez_display)
 
     async def __aexit__(self, exc_type, exc, tb):
         await self.browser.close()

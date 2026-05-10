@@ -23,6 +23,7 @@
 #       word_audio_download:        Enables downloading audio for search result word.
 #       word_audio_auto_download:   Downloads audio without prompting if found for each word.
 #                                   (Only available if word_audio_download is set to YES) 
+#       download_sentence_audio:    Enables downloading audio for sentences.
 #       
 #   Sentences________
 #       
@@ -48,40 +49,43 @@ max_results_displayed=20
 #_Expressions________________________________________________
 
 # NONE, FIRST, SELECT, ALL
-expression_autoselect=NONE
+expression_autoselect=FIRST
 
 # NONE, YES, NO
 exact_match_autoselect=NONE
 
 # NONE, FIRST, SELECT, ALL
-meaning_autoselect=NONE
+meaning_autoselect=ALL
 
 
 #_Audio______________________________________________________
 
 # YES, NO
-word_audio_download=YES
+word_audio_download=NO
 
 # NONE, YES, NO
-word_audio_auto_download=NONE
+word_audio_auto_download=YES
+
+# NONE, YES, NO
+download_sentence_audio=NO
 
 
 #_Sentences__________________________________________________
 
 # NONE, AUTO, MANUAL
-sentence_select_mode=NONE
+sentence_select_mode=AUTO
 
 # NONE, YES, NO
-auto_validate_random=NONE
+auto_validate_random=YES
 
 # NONE, [0-20]
-sentence_quantity=NONE
+sentence_quantity=0
 
 # NONE, [0-...]
-sentence_min_length=NONE
+sentence_min_length=0
 
 # NONE, [0-...]
-sentence_max_length=NONE
+sentence_max_length=9999
 
 # NONE, EVEN, RANDOM
-sentence_len_distribution=NONE
+sentence_len_distribution=EVEN

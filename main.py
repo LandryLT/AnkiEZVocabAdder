@@ -3,19 +3,25 @@ import os
 from scripts.scrappers import VocabScrapper, Scrapper
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.WARNING)
-from scripts.scrappers.JishoSearchResult import audio_folder
+from scripts.scrappers.JishoSearchResult import word_audio_folder
+from scripts.scrappers.NeocitiesScrapper import sentence_audio_folder
+from scripts.scrappers.KanjiResults import image_folder
 from scripts.utils.scrapperConfigParser import scrapperConfigParser
 import asyncio
 
 vocab_filepath = "./vocab2add.txt"
 scrapperConfig_filepath = "./searchConfig.txt"
 
-def clearSoundFiles():
-    for f in os.listdir(audio_folder):
-        os.remove(audio_folder+f)
+def clearOldFiles():
+    for f in os.listdir(word_audio_folder):
+        os.remove(word_audio_folder+f)
+    for f in os.listdir(sentence_audio_folder):
+        os.remove(sentence_audio_folder+f)
+    for f in os.listdir(image_folder):
+        os.remove(image_folder+f)
 
 async def main():
-    clearSoundFiles()
+    clearOldFiles()
     vocab_list = []
     if not os.path.isfile(vocab_filepath):
         with open(vocab_filepath, "w"):
@@ -45,6 +51,7 @@ async def main():
         # print("Started")
         try:
             await scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)
+            await scrapper.searchForKanjis(scrapper.all_kanjis)
         except Scrapper.Quit:
             logger.info("Goodbye")
             

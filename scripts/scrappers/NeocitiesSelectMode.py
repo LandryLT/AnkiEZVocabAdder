@@ -18,6 +18,7 @@ class NeocitiesSelectMode():
     def __init__(self):
         self.mode: NeocitiesSelectMode.SelectMode = self.SelectMode.NONE
         self.auto_validate_random = None
+        self.download_audio = None
         self.quantity: int = -1
         self.max_length: int = -1
         self.min_length: int = -1
@@ -59,6 +60,8 @@ class NeocitiesSelectMode():
             self.max_length = int(response.group(0))
 
     def setDistributionMode(self):
+        if self.length_distribution != NeocitiesSelectMode.LengthDistribution.NONE or self.mode == self.SelectMode.MANUAL:
+            return
         print(grey('Select sentence length distribution mode'))
         print("\t1. Even")
         print("\t2. Random")
@@ -76,11 +79,14 @@ class NeocitiesSelectMode():
         while self.mode == NeocitiesSelectMode.SelectMode.NONE:
             if re.match(r'(?i:^y(es)?$)', Scrapper._checkAbortResponse(grey('Enable \033[1mauto-select sentences\033[0m\033[2m ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None:
                 self.mode = NeocitiesSelectMode.SelectMode.AUTO
-                self.auto_validate_random = re.match(r'(?i:^y(es)?$)', Scrapper._checkAbortResponse(grey('Manually validate randomly selected sentences ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None
             else:
                 self.mode = NeocitiesSelectMode.SelectMode.MANUAL
+        while self.auto_validate_random == None and self.mode == NeocitiesSelectMode.SelectMode.AUTO:
+            self.auto_validate_random = not re.match(r'(?i:^y(es)?$)', Scrapper._checkAbortResponse(grey('Manually validate randomly selected sentences ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None
 
-        
+    def setDownloadAudio(self):
+        while self.download_audio == None:
+            self.download_audio = not re.match(r'(?i:^y(es)?$)', Scrapper._checkAbortResponse(grey('Disable downloading audio for sentences ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None
 
 
     def setAutoMode(self):
@@ -90,4 +96,5 @@ class NeocitiesSelectMode():
         self.setMinLength()
         self.setMaxLength()
         self.setDistributionMode()
+        self.setDownloadAudio()
 
