@@ -9,6 +9,7 @@
 #   General__________
 #
 #       max_results_displayed:      Max search results to display in one block
+#       anki_collection_file_path:  Path to anki collection
 #
 #   Expressions______
 #
@@ -42,14 +43,17 @@
 
 #_General____________________________________________________
 
-#[1-...]
+# [1-...]
 max_results_displayed=20
+
+# NONE, [path to anki collection]
+anki_collection_file_path=C:/Users/landr/AppData/Roaming/Anki2/TEST/collection.anki2
 
 
 #_Expressions________________________________________________
 
 # NONE, FIRST, SELECT, ALL
-expression_autoselect=FIRST
+expression_autoselect=ALL
 
 # NONE, YES, NO
 exact_match_autoselect=NONE
@@ -61,13 +65,13 @@ meaning_autoselect=ALL
 #_Audio______________________________________________________
 
 # YES, NO
-word_audio_download=NO
+word_audio_download=YES
 
 # NONE, YES, NO
 word_audio_auto_download=YES
 
 # NONE, YES, NO
-download_sentence_audio=NO
+download_sentence_audio=YES
 
 
 #_Sentences__________________________________________________
@@ -79,7 +83,7 @@ sentence_select_mode=AUTO
 auto_validate_random=YES
 
 # NONE, [0-20]
-sentence_quantity=0
+sentence_quantity=10
 
 # NONE, [0-...]
 sentence_min_length=0

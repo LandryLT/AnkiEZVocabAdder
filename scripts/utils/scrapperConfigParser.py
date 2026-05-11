@@ -1,12 +1,14 @@
 from re import match
 from scripts.scrappers.JishoSelectMode import JishoSelectMode
 from scripts.scrappers.NeocitiesSelectMode import NeocitiesSelectMode
+from pathlib import Path
 
 class scrapperConfigParser():
     def __init__(self, filepath: str):
         self.autoselect_definition = JishoSelectMode()
         self.autoselect_sentence = NeocitiesSelectMode()
         self.max_results_displayed = 20
+        self.anki_col_path = None
         with open(filepath, 'r') as f:
             lines = [l for l in f.readlines() if not match(r'^\#', l)]
             params = {}
@@ -45,6 +47,8 @@ class scrapperConfigParser():
                         self.autoselect_sentence.auto_validate_random = self.parseBool(item)
                     case "download_sentence_audio":
                         self.autoselect_sentence.download_audio = self.parseBool(item)
+                    case "anki_collection_file_path":
+                        self.anki_col_path = self.parsePath(item)
 
         self.parsedParams = {
             "jisho_mode": self.autoselect_definition,
@@ -90,3 +94,10 @@ class scrapperConfigParser():
             return JishoSelectMode.SelectMode.NONE
         value = value.group(0)
         return JishoSelectMode.SelectMode(["FIRST", "SELECT", "ALL"].index(value))
+    
+    @staticmethod
+    def parsePath(value: str) -> Path:
+        value: Path = Path(value)
+        if not value.is_file():
+            return None
+        return value

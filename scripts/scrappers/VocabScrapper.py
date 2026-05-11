@@ -67,7 +67,7 @@ class VocabScrapper():
         print(grey(italic(f"Downloading {len(all_kanji_rez)} kanji strokes images")))
         img_download_cors = [k.downloadImage() for k in all_kanji_rez]
         await tqdm.gather(*img_download_cors, bar_format=tqdm_bar_format)
-        pass
+        return self.all_kanjis
 
     async def __aenter__(self):
         self.logger.info("Launching Playwright...")

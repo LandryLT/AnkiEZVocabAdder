@@ -150,12 +150,13 @@ class NeocitiesScrapper(Scrapper):
     async def load_all_neocities_results(self, expression:str, search_term: str)  -> list[NeocitiesResult]:
         previous_count = 0
         total_rez = int(await self.page.evaluate("() => {return document.querySelector('#num-results').innerText}"))
+        all_loaded = await self.page.evaluate("() => {return document.querySelector('#results-list-end').checkVisibility()}")
         print(grey(f'Gathering {total_rez} sentences from {italic("sentencesearch.neocities.org...")}'))
         with tqdm(total=total_rez, bar_format=tqdm_bar_format+grey(' [{n_fmt}/{total_fmt}]')) as pbar:
             while True:
                 current_count = await self.page.evaluate("() => {return document.querySelectorAll('#search-results-list .search-result').length}")
                 pbar.update(current_count - previous_count)
-                if current_count == previous_count:
+                if current_count == previous_count or all_loaded:
                     break
                 previous_count = current_count
                 await self.page.evaluate("() => window.scrollTo(0, document.body.scrollHeight)")

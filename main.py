@@ -7,6 +7,7 @@ from scripts.scrappers.JishoSearchResult import word_audio_folder
 from scripts.scrappers.NeocitiesScrapper import sentence_audio_folder
 from scripts.scrappers.KanjiResults import image_folder
 from scripts.utils.scrapperConfigParser import scrapperConfigParser
+from scripts.anki.ankiChecker import AnkiChecker
 import asyncio
 
 vocab_filepath = "./vocab2add.txt"
@@ -42,16 +43,25 @@ async def main():
         config_parser = scrapperConfigParser(scrapperConfig_filepath)
         scrapperConfig = config_parser.parsedParams
 
+
+    # return
+
     if not vocab_list:
         logger.warning("No words in search list, exiting...")
         quit()
     
     scrapper = VocabScrapper(max_display=config_parser.max_results_displayed)
+    anki_checker = AnkiChecker(config_parser.anki_col_path)
     async with scrapper:
-        # print("Started")
         try:
-            await scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)
-            await scrapper.searchForKanjis(scrapper.all_kanjis)
+            vocab_results = await scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)
+            try:
+                with anki_checker:
+                    conflicting_results = anki_checker.conflictingVocab(vocab_results)
+                    kanji_results = await scrapper.searchForKanjis([k for k in scrapper.all_kanjis if not k in anki_checker.conflictingKanjis(scrapper.all_kanjis)])
+            except AnkiChecker.ColNotFound:
+                print("No Anki collection found, please change the 'anki_collection_file_path' in searchConfig.txt")
+                return
         except Scrapper.Quit:
             logger.info("Goodbye")
             
