@@ -2,11 +2,11 @@ from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_b
 import logging
 from scripts.scrappers import NeocitiesSelectMode, JishoScrapper, NeocitiesScrapper, JishoSelectMode, JishoResult, NeocitiesResult, KanjiScrapper, KanjiResults
 from playwright.async_api import async_playwright
-from collections import namedtuple
+from typing import NamedTuple
 import random
 from tqdm.asyncio import tqdm
 
-VocabScraperResult = namedtuple('VocabScraperResult', ['jisho', 'neocities'], defaults=[JishoResult, list[NeocitiesResult]])
+VocabScraperResult = NamedTuple('VocabScraperResult', [('jisho', JishoResult), ('neocities', list[NeocitiesResult])])
 
 class VocabScrapper():
     logger = logging.getLogger(__name__)
@@ -31,6 +31,7 @@ class VocabScrapper():
         [[self.all_kanjis.append(k) for k in expr.kanjis] for expr in selected_expr]
         self.all_kanjis = list(set(self.all_kanjis))
 
+        # Look for sentences
         neocities_mode.setAutoMode()
         selected_sentences = await self.neocities.selectSentence(selected_expr, neocities_mode)
         await self.neocities.downloadSounds(selected_sentences, neocities_mode.download_audio)

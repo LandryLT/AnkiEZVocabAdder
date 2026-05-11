@@ -5,7 +5,7 @@ import requests
 import uuid
 import os
 import asyncio
-from collections import namedtuple
+from typing import NamedTuple
 
 word_audio_folder = "./audio/words/"
 def parseFurigana(expression, kanjis, furiganas):
@@ -19,8 +19,8 @@ def parseFurigana(expression, kanjis, furiganas):
 
 
 
-JishoSearchResultRaw = namedtuple('JishoSearchResult', ['expression', 'furiganas', 'meanings', 'tags', 'soundlink', 'inflectionlink'], defaults=[str, str, list[dict[str, str | None]], list[str], str, ElementHandle])
-Meaning = namedtuple('Meaning', ['tag', 'meaning', 'supplemental_info'], defaults=[str, str, list[str]])
+JishoSearchResultRaw = NamedTuple('JishoSearchResult', [('expression', str), ('furiganas', str), ('meanings', list[dict[str, str | None]]), ('tags', list[str]), ('soundlink', str), ('inflectionlink', ElementHandle)])
+Meaning = NamedTuple('Meaning', [('tag', str), ('meaning', str), ('supplemental_info', list[str])])
 class JishoResult():
     def __init__(self, raw: JishoSearchResultRaw, search_term: str):
         self.search_term = search_term

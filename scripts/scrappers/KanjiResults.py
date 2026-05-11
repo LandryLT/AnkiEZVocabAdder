@@ -1,11 +1,11 @@
-from collections import namedtuple
+from typing import NamedTuple
 import re
 import uuid
 import asyncio
 import requests
 import os
 image_folder = './images/'
-KanjiResultsRaw = namedtuple("KanjiResultsRaw", ["meaning", "on_yomi", "kun_yomi", "jlpt", "ranking", "compounds"], defaults=[str, list[str], list[str], int, str, list[str]])
+KanjiResultsRaw = NamedTuple("KanjiResultsRaw", [("meaning", str), ("on_yomi", list[str]), ("kun_yomi", list[str]), ("jlpt", int), ("ranking", str), ("compounds", list[str])])
 class KanjiResults():
     def __init__(self, kanji: str, raw: KanjiResultsRaw):
         self.kanji = kanji

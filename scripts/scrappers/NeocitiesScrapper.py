@@ -4,7 +4,7 @@ from scripts.scrappers.NeocitiesSelectMode import NeocitiesSelectMode
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_bar_format
 import re
 from tqdm.asyncio import tqdm
-from collections import namedtuple
+from typing import NamedTuple
 import random
 import math
 import uuid
@@ -12,7 +12,7 @@ import os
 import asyncio
 import requests
 
-NeocitiesResult = namedtuple('NeocitiesResult', ["japanese", "english", "audio_link", "soundfile", "expression", "search_term"], defaults=[str, str, str, str, str, str])
+NeocitiesResult = NamedTuple('NeocitiesResult', [("japanese", str), ("english", str), ("audio_link", str), ("soundfile", str), ("expression", str), ("search_term", str)])
 sentence_audio_folder = "./audio/sentences/"
 class NeocitiesScrapper(Scrapper):  
     def __init__(self, page, max_rez_display):
@@ -150,12 +150,12 @@ class NeocitiesScrapper(Scrapper):
     async def load_all_neocities_results(self, expression:str, search_term: str)  -> list[NeocitiesResult]:
         previous_count = 0
         total_rez = int(await self.page.evaluate("() => {return document.querySelector('#num-results').innerText}"))
-        all_loaded = await self.page.evaluate("() => {return document.querySelector('#results-list-end').checkVisibility()}")
         print(grey(f'Gathering {total_rez} sentences from {italic("sentencesearch.neocities.org...")}'))
         with tqdm(total=total_rez, bar_format=tqdm_bar_format+grey(' [{n_fmt}/{total_fmt}]')) as pbar:
             while True:
                 current_count = await self.page.evaluate("() => {return document.querySelectorAll('#search-results-list .search-result').length}")
                 pbar.update(current_count - previous_count)
+                all_loaded = await self.page.evaluate("() => {return document.querySelector('#results-list-end').checkVisibility()}")
                 if current_count == previous_count or all_loaded:
                     break
                 previous_count = current_count
