@@ -30,9 +30,9 @@ class AnkiModelGen():
             self.kanji_model = self.genKanjiModel()
         if not self.vocab_model:
             self.logger.info("Vocab note model not found")
-            self.kanji_model = self.genVocabModel()
+            self.vocab_model = self.genVocabModel()
         
-        return EZModels(self.vocab_model, self.kanji_model)
+        return EZModels(self.kanji_model, self.vocab_model)
 
     def genKanjiModel(self) -> NotetypeDict:
         self.logger.info("Generating kanji note model...")
@@ -48,7 +48,7 @@ class AnkiModelGen():
         for r in ["OnYomi", "KunYomi"]:
             for i in range(10):
                 for t in ["Word", "Furigana", "Meaning"]:
-                    anki_models.add_field(model, anki_models.new_field(f"{r} Compound {i} {t}"))
+                    anki_models.add_field(model, anki_models.new_field(f"{r} Compound {i+1} {t}"))
         
         restitution_template = anki_models.new_template("Restitution Card")
         expression_template = anki_models.new_template("Expression Card")
@@ -75,13 +75,13 @@ class AnkiModelGen():
         anki_models.add_field(model, anki_models.new_field("Meanings"))
         anki_models.add_field(model, anki_models.new_field("Audio"))
         anki_models.add_field(model, anki_models.new_field("JLPT"))
-        anki_models.add_field(model, anki_models.new_field("Transitivness"))
-        for infl in ["Non-past", "Non-past polite", "Past", "Past polite", "Te-form", "Potential", "Passive", "Causative", "Causative passive", "Imperative"]:
+        anki_models.add_field(model, anki_models.new_field("Transitivity"))
+        for infl in ["Non-past", "Non-past polite", "Past", "Past polite", "Te-form", "Potential", "Passive", "Causative", "Causative Passive", "Imperative"]:
             for m in ["Affirmative", "Negative"]:
                 anki_models.add_field(model, anki_models.new_field(f"Inflection - {infl} - {m}"))
         for i in range(20):
             for f in ["Japanese", "English", "Audio"]:
-                anki_models.add_field(model, anki_models.new_field(f"Sentence {i} {f}"))
+                anki_models.add_field(model, anki_models.new_field(f"Sentence {i+1} {f}"))
 
         restitution_template = anki_models.new_template("Restitution Card")
         expression_template = anki_models.new_template("Expression Card")

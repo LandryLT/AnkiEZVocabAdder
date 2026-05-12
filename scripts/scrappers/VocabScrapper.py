@@ -1,10 +1,14 @@
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_bar_format
 import logging
-from scripts.scrappers import NeocitiesSelectMode, JishoScrapper, NeocitiesScrapper, JishoSelectMode, JishoResult, NeocitiesResult, KanjiScrapper, KanjiResults
+from scripts.scrappers import NeocitiesSelectMode, JishoScrapper, NeocitiesScrapper, JishoSelectMode, JishoResult, NeocitiesResult, KanjiScrapper, KanjiResult
 from playwright.async_api import async_playwright
 from typing import NamedTuple
 import random
 from tqdm.asyncio import tqdm
+import os
+from scripts.scrappers.JishoSearchResult import word_audio_folder
+from scripts.scrappers.NeocitiesScrapper import sentence_audio_folder
+from scripts.scrappers.KanjiResults import image_folder
 
 VocabScraperResult = NamedTuple('VocabScraperResult', [('jisho', JishoResult), ('neocities', list[NeocitiesResult])])
 
@@ -14,7 +18,13 @@ class VocabScrapper():
     def __init__(self, max_display):
         self.max_rez_display = max_display
         self.all_kanjis = []
-    
+
+    def clearCache(self):
+        self.jisho.clearCache()
+        self.jisho_kanji.clearCache()
+        self.neocities.clearCache()
+
+
     async def searchVocabList(self, vocab_list: list[str], 
                        jisho_mode: JishoSelectMode, 
                        neocities_mode: NeocitiesSelectMode,
@@ -59,7 +69,7 @@ class VocabScrapper():
                 print(italic("\t"+random_sentence.english))
 
     async def searchForKanjis(self, kanjis: list[str]):
-        all_kanji_rez: list[KanjiResults] = []
+        all_kanji_rez: list[KanjiResult] = []
         for i, k in enumerate(kanjis):
             clearConsole()
             header = f'[{bold(k)}] ' + grey(f'({i}/{len(kanjis)} kanjis)') + "\n"
@@ -68,7 +78,7 @@ class VocabScrapper():
         print(grey(italic(f"Downloading {len(all_kanji_rez)} kanji strokes images")))
         img_download_cors = [k.downloadImage() for k in all_kanji_rez]
         await tqdm.gather(*img_download_cors, bar_format=tqdm_bar_format)
-        return self.all_kanjis
+        return all_kanji_rez
 
     async def __aenter__(self):
         self.logger.info("Launching Playwright...")

@@ -49,17 +49,19 @@ max_results_displayed=20
 # NONE, [path to anki collection]
 anki_collection_file_path=C:/Users/landr/AppData/Roaming/Anki2/TEST/collection.anki2
 
+# NONE, YES, NONE
+clear_cache_on_complete=NONE
 
 #_Expressions________________________________________________
 
 # NONE, FIRST, SELECT, ALL
-expression_autoselect=ALL
+expression_autoselect=SELECT
 
 # NONE, YES, NO
-exact_match_autoselect=NONE
+exact_match_autoselect=NO
 
 # NONE, FIRST, SELECT, ALL
-meaning_autoselect=ALL
+meaning_autoselect=SELECT
 
 
 #_Audio______________________________________________________
@@ -83,7 +85,7 @@ sentence_select_mode=AUTO
 auto_validate_random=YES
 
 # NONE, [0-20]
-sentence_quantity=10
+sentence_quantity=5
 
 # NONE, [0-...]
 sentence_min_length=0

@@ -5,9 +5,10 @@ import requests
 import uuid
 import os
 import asyncio
-from typing import NamedTuple
+from typing import NamedTuple, Callable
+import re
 
-word_audio_folder = "./audio/words/"
+word_audio_folder = "./caches/audio/words/"
 def parseFurigana(expression, kanjis, furiganas):
     output = ""
     for c in expression:
@@ -24,6 +25,7 @@ Meaning = NamedTuple('Meaning', [('tag', str), ('meaning', str), ('supplemental_
 class JishoResult():
     def __init__(self, raw: JishoSearchResultRaw, search_term: str):
         self.search_term = search_term
+        self.uuid = str(uuid.uuid1())
         self.expression = raw.expression
         self.kanjis = findall(r'[一-龯]', self.expression)
         self.furigana = parseFurigana(raw.expression, self.kanjis, raw.furiganas)
@@ -56,7 +58,7 @@ class JishoResult():
             cells = await page.evaluate("() => {return [...document.querySelectorAll('"+cell_path+"')].map(x => x.innerText)}")
         for i in range(int(len(cells)//3)):
             s_i = i * 3
-            self.inflections[cells[s_i]] = cells[s_i + 1:s_i + 3]
+            self.inflections[re.sub(r',', "", cells[s_i])] = cells[s_i + 1:s_i + 3]
 
         close = await page.query_selector("#inflection_modal > a:nth-child(2)")
         if not await close.is_visible():
@@ -76,7 +78,7 @@ class JishoResult():
     def setUsuallyWrittenInKana(self):
         self.usually_kana = any(any(match(r"Usually written using kana alone", sup_inf) for sup_inf in  m.supplemental_info) for m in self.meanings)
 
-    async def downloadSound(self) -> str:
+    async def downloadSound(self, save_cache_callback: Callable | None) -> str:
         if not self.soundlink:
             return
         download_file_name = f'{self.expression}_{str(uuid.uuid1())}.mp3'
@@ -86,4 +88,11 @@ class JishoResult():
             for chunk in r.iter_content():
                 file.write(chunk)
         self.soundfile = os.path.abspath(download_file_path)
+        # Funky caching stuff
+        if save_cache_callback:
+            save_cache_callback(self.uuid, self)
         return self.soundfile
+    
+    def neoCitiesSearchTerm(self) -> str:
+        search_terms = [self.expression]+self.getFlattenedListOfInflection()+[self.furigana if self.usually_kana else None]
+        return f'{"|".join([st for st in search_terms if st])}'

@@ -1,26 +1,41 @@
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_bar_format
 from enum import Enum
-from scripts.scrappers.JishoSearchResult import JishoResult, JishoSearchResultRaw
-from scripts.scrappers.Scrapper import Scrapper, oopsable
+from scripts.scrappers.JishoSearchResult import JishoResult, JishoSearchResultRaw, word_audio_folder
+from scripts.scrappers.Scrapper import Scrapper, oopsable, cacheable
 from scripts.scrappers.JishoSelectMode import JishoSelectMode
 import re
+from typing import Callable
 from tqdm.asyncio import tqdm
+from scripts.caching.cacheSearch import SearchCache
+from typing import Any
+import os
+
+expression_cache = SearchCache("./caches/jisho/exprcache")
+meaning_cache = SearchCache("./caches/jisho/meancache")
+sound_cache = SearchCache("./caches/jisho/sndcache")
 
 class JishoScrapper(Scrapper):    
     def __init__(self, page, max_rez_display):
         super().__init__(page, max_rez_display)
 
+    @cacheable(expression_cache)
     @oopsable()
     async def selectExpressions(self, vocab_list: list[str], mode: JishoSelectMode.SelectMode = None, is_exact_match_autoselect: bool = False) -> list[JishoResult]:        
-        output = []
         expression_question = True
+        output = []
+        # def prepare_cached_output_func(rez: JishoResult, cached_search_terms: str):
+        #     if rez.search_term in cached_search_terms:
+        #         output.append(rez)
+        prepare_output: Callable[[JishoResult, list[str]], None] = lambda rez, stl: output.append(rez) if rez.search_term in stl else True
+        callback = lambda rez: output.append(rez)
+        (uncached_vocab_list, output, cache_on_append_result) = self.fromcache(expression_cache, vocab_list, callback, prepare_output, output)
         # Go through vocab list
-        for word_ind, word in enumerate(vocab_list):
+        for word_ind, word in enumerate(uncached_vocab_list):
             word = word.replace('\r\n', "")
-            header = f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(vocab_list)} search terms)")}\n'
+            header = f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(uncached_vocab_list)} search terms)")}\n'
             jisho_results = await self.jishoSearchTerm(word, header)
             clearConsole()
-            print(f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(vocab_list)} search terms)")}\n')
+            print(f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(uncached_vocab_list)} search terms)")}\n')
             
             # No results
             if not jisho_results:
@@ -29,53 +44,72 @@ class JishoScrapper(Scrapper):
             if mode == JishoSelectMode.SelectMode.FIRST or (mode == JishoSelectMode.SelectMode.SELECT and is_exact_match_autoselect and jisho_results[0].is_exact_match) or len(jisho_results) == 1:
                 if jisho_results[0].is_exact_match:
                     self.logger.warning(f"Found exact match for {word} !")
-                output.append(jisho_results[0])
+                cache_on_append_result(jisho_results[0].search_term, jisho_results[0])
                 continue
             elif mode == JishoSelectMode.SelectMode.ALL:
-                [output.append(rez) for rez in jisho_results]
+                [cache_on_append_result(rez.search_term, rez) for rez in jisho_results]
                 continue
 
             self.promptForSelection(choices=[f"{bold(expr.expression)} ({expr.romaji}):\t\"{italic(expr.meanings[0].meaning)}\" {grey(f'(1/{len(expr.meanings)} meanings)')}" for expr in jisho_results], 
                                     input_text=(grey("Expressions indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')+grey(italic('(ll)'))} {grey('or')} {bold('n')+grey(italic('(one)'))}) " if expression_question else "") + ": ",
                                     header=header+grey(f"\nPlease select expressions to keep"),
-                                    callback=lambda i: output.append(jisho_results[i]))
+                                    callback=lambda i: cache_on_append_result(jisho_results[i].search_term, jisho_results[i]))
             
             expression_question = False
         return output
     
+    @cacheable(sound_cache)
     @oopsable()
     async def downloadSounds(self, selected_expr: list[JishoResult], enable:bool = True, auto_download: bool = None) -> list[JishoResult]:
-        output = selected_expr.copy()
-        expr_with_links = [expr for expr in output if expr.soundlink]
         if not enable:
-            return output
+            return selected_expr
+        output = []
+        expr_uuids = [e.uuid for e in selected_expr]
+        prepare_output = lambda rez, stl: output.append(rez) if rez.uuid in stl else True
+        (uncached_results, output, cache_on_append_result) = self.fromcache(sound_cache, expr_uuids, prepare_output_func=prepare_output, output_buffer=output)
+        selected_expr = output + [rz for rz in selected_expr.copy() if rz.uuid in uncached_results]
+        expr_with_links_to_download = [expr for expr in selected_expr if expr.soundlink and (not expr.soundfile or not os.path.isfile(expr.soundfile))]
+
         clearConsole()
-        if not expr_with_links:
+        if not expr_with_links_to_download:
             self.logger.info("No soundlinks found in selected expressions, skipping...")
-            return output
+            return selected_expr
         
         if auto_download:
-            print(grey(italic(f'Downloading {len(expr_with_links)} audio files...\n')))
-            download_cors = [e.downloadSound() for e in expr_with_links]
+            print(grey(italic(f'Downloading {len(expr_with_links_to_download)} audio files...\n')))
+            download_cors = [e.downloadSound(cache_on_append_result) for e in expr_with_links_to_download]
             await tqdm.gather(*download_cors, bar_format=tqdm_bar_format)
-            return output
+            return selected_expr
         
-        for i, expression in enumerate(expr_with_links):
+        for i, expression in enumerate(expr_with_links_to_download):
             clearConsole()
-            print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(expr_with_links)} sounds to download)")}\n')
+            print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(expr_with_links_to_download)} sounds to download)")}\n')
             if re.match(r'(?i:^y(es)?$)', self._checkAbortResponse(grey('Skip this file ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None:
                 continue
             clearConsole()
-            print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(expr_with_links)} sounds to download)")}\n')
+            print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(expr_with_links_to_download)} sounds to download)")}\n')
             print(italic(grey(f'Downloading audio from jisho.org')))
             await expression.downloadSound()
-        return output
+        return selected_expr
         
+    @cacheable(meaning_cache)
     @oopsable()
     async def selectMeanings(self, selected_expr: list[JishoResult], mode: JishoSelectMode.SelectMode = JishoSelectMode.SelectMode.NONE) -> list[JishoResult]:     
-        output = selected_expr.copy()
+        results_uuids = [se.uuid for se in selected_expr]
+        output = []
+        prepare_output: Callable[[Any, list[str]], None] = lambda rez, stl: output.append(rez) if rez.uuid in stl else True
+        (uncached_uuids, cached_rez, cache_result) = self.fromcache(meaning_cache, results_uuids, prepare_output_func=prepare_output, output_buffer=output)
+        # Update soundfile links
+        for ca_rez in cached_rez:
+            assert isinstance(ca_rez, JishoResult)
+            ca_rez.soundfile = list(filter(lambda x: x.uuid == ca_rez.uuid, selected_expr))[0]
+        output = cached_rez + [expr for expr in selected_expr.copy() if expr.uuid in uncached_uuids]
+        
         expression_question = True
         for i, expression in enumerate(output):
+            assert isinstance(expression, JishoResult)
+            if not expression.uuid in uncached_uuids:
+                continue
             clearConsole()
             print(f'[{expression.search_term} - {bold(expression.expression)} ({expression.furigana})] {grey(f"({i + 1}/{len(output)} search terms)")}\n')
             if mode == JishoSelectMode.SelectMode.SELECT and len(expression.meanings) > 1:
@@ -93,6 +127,7 @@ class JishoScrapper(Scrapper):
 
                 expression.meanings = [expression.meanings[0]]
 
+            cache_result(expression.uuid, expression)
             self.logger.debug(f"{[{expression.search_term} - {bold(expression.expression)}]}'s meanings: {expression.meanings}")
         return output
     
@@ -165,3 +200,10 @@ class JishoScrapper(Scrapper):
     @staticmethod
     def _jishosearch(term: str) -> str:
         return f'https://jisho.org/search/{term}'
+    
+    def clearCache(self):
+        for f in os.listdir(word_audio_folder):
+            os.remove(word_audio_folder+f)
+        expression_cache.clearCache()
+        meaning_cache.clearCache()
+

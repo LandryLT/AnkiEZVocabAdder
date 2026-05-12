@@ -1,4 +1,4 @@
-from scripts.scrappers.Scrapper import Scrapper, oopsable
+from scripts.scrappers.Scrapper import Scrapper, oopsable, cacheable
 from scripts.scrappers.JishoSearchResult import JishoResult
 from scripts.scrappers.NeocitiesSelectMode import NeocitiesSelectMode
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_bar_format
@@ -11,28 +11,48 @@ import uuid
 import os
 import asyncio
 import requests
+from scripts.caching.cacheSearch import SearchCache
 
-NeocitiesResult = NamedTuple('NeocitiesResult', [("japanese", str), ("english", str), ("audio_link", str), ("soundfile", str), ("expression", str), ("search_term", str)])
-sentence_audio_folder = "./audio/sentences/"
+NeocitiesResult = NamedTuple('NeocitiesResult', [("japanese", str), ("english", str), ("audio_link", str), ("soundfile", str), ("expression", str), ("search_term", str), ("jisho_uuid", str), ("uuid", str)])
+sentence_audio_folder = "./caches/audio/sentences/"
+
+page_cache = SearchCache("./caches/neocities/pagecache")
+sentence_cache = SearchCache("./caches/neocities/sencache")
+sound_cache = SearchCache("./caches/neocities/sndcache")
+
 class NeocitiesScrapper(Scrapper):  
     def __init__(self, page, max_rez_display):
         super().__init__(page, max_rez_display)
         
+    def clearCache(self):
+        for f in os.listdir(sentence_audio_folder):
+            os.remove(sentence_audio_folder+f)
+        sentence_cache.clearCache()
+        sound_cache.clearCache()
+        page_cache.clearCache()
+
+    @cacheable(sentence_cache)
     @oopsable()
     async def selectSentence(self, selected_expr: list[JishoResult], mode: NeocitiesSelectMode = None) -> list[list[NeocitiesResult]]:
         if mode.quantity == 0:
             return [*[[]]*len(selected_expr)]
         clearConsole()
-        all_expr = selected_expr.copy()
-        expression_question = True
         output = []
+        all_uuids = [rez.uuid for rez in selected_expr]
+        def select_cached_ouput(rez: list[NeocitiesResult], jisho_uuids: list[str]):
+            if rez and rez[0].jisho_uuid in jisho_uuids:
+                output.append(rez)
+        (uncached_uuids, output, cache_result_func) = self.fromcache(sentence_cache, all_uuids, lambda rez: output.append(rez), select_cached_ouput, output)
+        
+        all_expr = [expr for expr in selected_expr.copy() if expr.uuid in uncached_uuids]
+        expression_question = True
+        # remember to cache selection
         for i, expression in enumerate(all_expr):
             selected_sentences = []
-            search_terms = [expression.expression]+expression.getFlattenedListOfInflection()+[expression.furigana if expression.usually_kana else None]
-            search_term = f'{"|".join([st for st in search_terms if st])}'
-            neocities_rez = await self.neo_cities_search_term(search_term, expression.expression, f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(all_expr)} sentences to set)")}\n')
+            search_term = expression.neoCitiesSearchTerm()
+            neocities_rez = await self.neo_cities_search_term(search_term, expression.expression, f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(all_expr)} sentences to set)")}\n', expression.uuid)
             if not neocities_rez:
-                output.append(selected_sentences)
+                cache_result_func(expression.uuid, selected_sentences)
                 continue
             if mode.max_length != -1 and (mode.min_length != -1 or mode.min_length <= mode.max_length):
                 neocities_rez = [nr for nr in neocities_rez if len(nr.japanese) <= mode.max_length]
@@ -41,13 +61,14 @@ class NeocitiesScrapper(Scrapper):
             clearConsole()
             if mode.mode == NeocitiesSelectMode.SelectMode.MANUAL:
                 choices = [f'{s.japanese}\n\t\t{s.english}\n' for s in neocities_rez]
+                input_text = (grey("Sentences indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')} {grey('or')} {bold('none')}) " if expression_question else "") + ": "
                 self.boldSearchTerm(choices, search_term)                    
                 self.promptForSelection(choices=choices,
                                         input_text=input_text,
                                         header=f'[{expression.search_term} - {bold(expression.expression)} ({expression.furigana})] {grey(f"({i + 1}/{len(all_expr)} sentences to set)")}\n{grey(italic(expression.meanings[0].meaning))}\n',
                                         callback=lambda i: selected_sentences.append(neocities_rez[i]))
                 expression_question = False
-                output.append(selected_sentences)
+                cache_result_func(expression.uuid,selected_sentences)
             else:
                 indices_to_remove = []
                 selected_ind = []
@@ -58,7 +79,7 @@ class NeocitiesScrapper(Scrapper):
                     if len(neocities_rez)-len(filtered_indices) <= remaining:
                         selected_sentences = [neocities_rez[i] for i in selected_ind]
                         self.logger.info(f"{expression.expression} sentence result returned less results than asked for, returning all results")
-                        output.append(selected_sentences)
+                        cache_result_func(expression.uuid, selected_sentences)
                         break
                     if len(selected_ind) < mode.quantity:
                         if mode.length_distribution == NeocitiesSelectMode.LengthDistribution.RANDOM:
@@ -68,7 +89,7 @@ class NeocitiesScrapper(Scrapper):
                         selected_ind.sort()
                         selected_sentences = [neocities_rez[i] for i in selected_ind]
                     if mode.auto_validate_random:
-                        output.append(selected_sentences)
+                        cache_result_func(expression.uuid, selected_sentences)
                         break
                     choices = [f'{s.japanese}\n\t\t{s.english}\n' for s in selected_sentences]
                     self.boldSearchTerm(choices, search_term)                    
@@ -81,16 +102,18 @@ class NeocitiesScrapper(Scrapper):
                         invalid_input.append(i)
 
                     filtered_chunks = []
-                    input_text = (grey("Sentences indices to remove from selection ") if expression_question else "") + grey(f"[{len(neocities_rez)-len(indices_to_remove + selected_ind)} remaining sentences]\n") + (f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')+grey(italic('(ll)'))} {grey('or')} {bold('n')+grey(italic('(one)'))}) " if expression_question else "") + ": "
+                    # input_text = (grey("Sentences indices to remove from selection ") if expression_question else "") + grey(f"[{len(neocities_rez)-len(indices_to_remove + selected_ind)} remaining sentences]\n") + (f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')+grey(italic('(ll)'))} {grey('or')} {bold('n')+grey(italic('(one)'))}) " if expression_question else "") + ": "
                     expression_question = False
                     self.promptForSelection(choices=choices,
                                             input_text=input_text,
                                             header=f'[{expression.search_term} - {bold(expression.expression)} ({expression.furigana})] {grey(f"({i + 1}/{len(all_expr)} sentences to set)")}\n{grey(italic(expression.meanings[0].meaning))}\n',
                                             callback=removeIndCallback,
-                                            errorCallback=errorInput)
+                                            errorCallback=errorInput,
+                                            reverse_callback_order=True)
                     if mode.quantity == len(selected_ind) and not invalid_input:
-                        output.append(selected_sentences)
+                        cache_result_func(expression.uuid, selected_sentences)
                         break
+            sentence_cache.save_pickled_cache()
         return output
 
     @staticmethod
@@ -119,9 +142,11 @@ class NeocitiesScrapper(Scrapper):
                 choice = choice[:m.start()] + bold(choice[m.start():m.end()]) + choice[m.end():]
             choices[ind] = choice
 
+    @cacheable(sound_cache)
     async def downloadSounds(self, sentence_groups: list[list[NeocitiesResult]], enable: bool = True):
         if not enable or not sentence_groups:
             return
+        
         clearConsole()
         flat_sentences = []
         [flat_sentences.extend(grp) for grp in sentence_groups]
@@ -129,7 +154,10 @@ class NeocitiesScrapper(Scrapper):
         download_cors = [self._downloadSound(s) for s in flat_sentences]
         await tqdm.gather(*download_cors, bar_format=tqdm_bar_format)
 
-    async def neo_cities_search_term(self, search_term: str, expression: str, header: str) -> list[NeocitiesResult]:
+    @cacheable(page_cache)
+    async def neo_cities_search_term(self, search_term: str, expression: str, header: str, jisho_uuid: str) -> list[NeocitiesResult]:
+        if search_term in page_cache.cache.keys():
+            return page_cache.cache[search_term][0]
         clearConsole()
         print(italic(grey(f'Loading sentencesearch.neocities.org...')))
         await self.page.goto(self._neocitiessearch(search_term))
@@ -144,10 +172,12 @@ class NeocitiesScrapper(Scrapper):
             return []
 
         clearConsole()
-        print(header)        
-        return await self.load_all_neocities_results(expression, search_term)
+        print(header)   
+        result = await self.load_all_neocities_results(expression, search_term, jisho_uuid)
+        page_cache.addToCache(search_term, result)
+        return result
 
-    async def load_all_neocities_results(self, expression:str, search_term: str)  -> list[NeocitiesResult]:
+    async def load_all_neocities_results(self, expression:str, search_term: str, jisho_uuid)  -> list[NeocitiesResult]:
         previous_count = 0
         total_rez = int(await self.page.evaluate("() => {return document.querySelector('#num-results').innerText}"))
         print(grey(f'Gathering {total_rez} sentences from {italic("sentencesearch.neocities.org...")}'))
@@ -180,7 +210,7 @@ class NeocitiesScrapper(Scrapper):
             }
             """)
 
-        return [NeocitiesResult(**rez, expression=expression, soundfile=None, search_term=search_term) for rez in output]
+        return [NeocitiesResult(**rez, expression=expression, soundfile=None, search_term=search_term, jisho_uuid=jisho_uuid, uuid=uuid.uuid1()) for rez in output]
             
     @staticmethod
     def _neocitiessearch(term: str) -> str:
@@ -189,6 +219,9 @@ class NeocitiesScrapper(Scrapper):
     async def _downloadSound(self, sentence: NeocitiesResult) -> str:
         if not sentence.audio_link:
             return
+        if sentence.uuid in sound_cache.cache.keys() and os.path.isfile(sound_cache.cache[sentence.uuid][0].soundfile):
+            sentence._replace(soundfile=sound_cache.cache[sentence.uuid][0].soundfile)
+            return sentence.soundfile
         download_file_name = f'{sentence.expression}_sentence_{str(uuid.uuid1())}.mp3'
         download_file_path = sentence_audio_folder + download_file_name
         
@@ -196,5 +229,6 @@ class NeocitiesScrapper(Scrapper):
         with open(download_file_path, "wb") as file:
             for chunk in r.iter_content():
                 file.write(chunk)
-        sentence._replace(soundfile=os.path.abspath(download_file_path))
-        return sentence.soundfile
+        sentence = sentence._replace(soundfile=os.path.abspath(download_file_path))
+        sound_cache.addToCache(sentence.uuid, sentence)
+        return sentence

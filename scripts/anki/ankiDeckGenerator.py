@@ -5,8 +5,8 @@ from copy import deepcopy
 from typing import NamedTuple
 
 VocabVerb = NamedTuple("VocabVerb", [("deck", Deck), ("transitive", Deck), ("intransitive", Deck)])
-VocabAdj = NamedTuple("VocabAdj", [("deck", Deck), ("i", Deck), ("a", Deck)])
-VocabJLPTDeck = NamedTuple("VocabJLPTDeck", [("deck", Deck), ("verbs", VocabVerb), ("ajectives", VocabAdj), ("nouns", Deck), ("expression", Deck), ("others", Deck)])
+VocabAdj = NamedTuple("VocabAdj", [("deck", Deck), ("i", Deck), ("na", Deck)])
+VocabJLPTDeck = NamedTuple("VocabJLPTDeck", [("deck", Deck), ("verbs", VocabVerb), ("adjectives", VocabAdj), ("nouns", Deck), ("expressions", Deck)])
 
 VocabDecks = NamedTuple("VocabDecks", [("deck", Deck), ("n1", VocabJLPTDeck), ("n2", VocabJLPTDeck), ("n3", VocabJLPTDeck), ("n4", VocabJLPTDeck), ("n5", VocabJLPTDeck)])
 KanjiDecks = NamedTuple("KanjiDecks", [("deck", Deck), ("n1", Deck), ("n2", Deck), ("n3", Deck), ("n4", Deck), ("n5", Deck)])
@@ -59,8 +59,7 @@ class AnkiDeckGen():
                              self.col.decks.by_name(adj_branch+"::Na-Adjective"),)
             noun_d = self.col.decks.by_name(curr_branch+"::Nouns")
             expr_d = self.col.decks.by_name(curr_branch+"::Expressions")
-            other_d = self.col.decks.by_name(curr_branch+"::Others")
-            jlpt_decks.append(VocabJLPTDeck(jlpt_d, verb_d, adj_d, noun_d, expr_d, other_d))
+            jlpt_decks.append(VocabJLPTDeck(jlpt_d, verb_d, adj_d, noun_d, expr_d))
             
         return VocabDecks(kanji_deck, *jlpt_decks)
     
@@ -93,7 +92,6 @@ class AnkiDeckGen():
             },
             "Nouns":{},
             "Expressions":{},
-            "Others":{}
         }
         deck_tree = {
             "EZAnki":{

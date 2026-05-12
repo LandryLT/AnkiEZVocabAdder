@@ -1,12 +1,25 @@
-from .Scrapper import Scrapper
-from .KanjiResults import KanjiResults, KanjiResultsRaw
+from .Scrapper import Scrapper, cacheable
+from .KanjiResults import KanjiResult, KanjiResultsRaw, image_folder, kanji_img_cache
 from scripts.utils.printingUtils import clearConsole, italic, grey
+import os
+from scripts.caching.cacheSearch import SearchCache
+
+kanji_page_cache = SearchCache("./caches/kanjis/pagecache")
 
 class KanjiScrapper(Scrapper):
     def __init__(self, page, max_rez_display):
         super().__init__(page, max_rez_display)
     
+    def clearCache(self):
+        for f in os.listdir(image_folder):
+            os.remove(image_folder+f)
+        kanji_img_cache.clearCache()
+        kanji_page_cache.clearCache()
+
+    @cacheable(kanji_page_cache)
     async def jishoKanjiSearch(self, kanji:str, header: str):
+        if kanji in kanji_page_cache.cache.keys():
+            return kanji_page_cache.cache[kanji][0]
         clearConsole()
         print(header)
         print(italic(grey(f'Loading kanji from jisho.org...\n')))
@@ -18,9 +31,9 @@ class KanjiScrapper(Scrapper):
                                             output = {}
                                             for (c of elems){
                                                 if (c.querySelector('h2').innerText.includes("Kun")){
-                                                    output["kun"] = [...c.querySelectorAll('li')].map(x => x.innerText)
+                                                    output["KunYomi"] = [...c.querySelectorAll('li')].map(x => x.innerText)
                                                 } else if (c.querySelector('h2').innerText.includes("On")){
-                                                    output["on"] = [...c.querySelectorAll('li')].map(x => x.innerText)
+                                                    output["OnYomi"] = [...c.querySelectorAll('li')].map(x => x.innerText)
                                                 }
                                             }
                                             return output
@@ -35,7 +48,9 @@ class KanjiScrapper(Scrapper):
                                             compounds: getCompounds(compounds)
                                         }
                                     }""")
-        return KanjiResults(kanji, KanjiResultsRaw(**dict_rez))
+        result = KanjiResult(kanji, KanjiResultsRaw(**dict_rez))
+        kanji_page_cache.addToCache(kanji, result)
+        return result
     
     @staticmethod
     def _jishokanjisearch(term: str) -> str:

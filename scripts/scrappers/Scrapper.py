@@ -5,6 +5,8 @@ import functools
 from typing import Callable
 import math
 import logging
+from typing import Any
+from scripts.caching.cacheSearch import SearchCache
 
 def oopsable():
     def wrapper(f):
@@ -18,13 +20,46 @@ def oopsable():
         return wrap
     return wrapper
 
+def cacheable(cache: SearchCache):
+    def wrapper(f):
+        @functools.wraps(f)
+        async def wrap(*args, **kwargs):
+            try:
+                output = await f(*args, **kwargs)
+            except Scrapper.Oops as e:
+                raise e
+            except Exception as e:
+                cache.save_pickled_cache()
+                raise e
+            cache.save_pickled_cache()
+            return output
+        return wrap
+    return wrapper
+
 class Scrapper():
     logger = logging.getLogger(__name__)
     def __init__(self, page: Page, max_rez_display: int):
         self.page = page
         self.max_rez_display = max_rez_display
 
-    
+    def fromcache(self, cache: SearchCache, search_terms: list[str], callback: Callable[[Any], None] | None = None,  prepare_output_func: Callable[[Any, list[str]], None] | None = None, output_buffer: list = []) -> tuple[list[str], list[Any], Callable[[str, Any], None]]:
+        cache_data = cache.cache
+        cached_search = [cached_data for key, cached_data in cache_data.items() if key in search_terms]        
+        cached_objects = output_buffer
+        for csgroup in cached_search:
+            for cs in csgroup:
+                if prepare_output_func:
+                    prepare_output_func(cs, search_terms)
+                    # output.append(cs)
+        # [[output.append(cs) for cs in csgroup] for csgroup in cached_search]
+        uncached_search_terms = [st for st in search_terms if not st in cache_data.keys()]
+        # callback = cached_objects.append if callback is None else callback 
+        def on_append_result(search_term: str, rez: Any):
+            if callback:
+                callback(rez)
+            cache.addToCache(search_term, rez)
+        return (uncached_search_terms, cached_objects, on_append_result)
+
     class Quit(Exception):
         def __init__(self, *args):
             super().__init__(*args)
@@ -47,7 +82,7 @@ class Scrapper():
     def defErrorCallback(i):
         pass
 
-    def promptForSelection(self, choices: list[str], input_text: str, header: str, callback: Callable[[int], None], use_none: bool = True, errorCallback: Callable[[int], None] = defErrorCallback):
+    def promptForSelection(self, choices: list[str], input_text: str, header: str, callback: Callable[[int], None], use_none: bool = True, errorCallback: Callable[[int], None] = defErrorCallback, reverse_callback_order=False):
         start_index = 0
         num_of_choices = len(choices)
         while True:
@@ -59,7 +94,7 @@ class Scrapper():
             if num_of_choices > self.max_rez_display:
                 print(grey(f'[{start_index}-{min(end_index, num_of_choices)-1}/{num_of_choices}]') +
                       f'({italic("Enter")}: {grey("next choices")} | p: {grey("prev. choices ")})')
-            response = self._checkAbortResponse(input_text).replace(" ", "")
+            response = self._checkAbortResponse(input_text)
             if not response:
                 start_index = 0 if end_index >= num_of_choices else (self.max_rez_display + start_index) % num_of_choices
                 continue
@@ -78,6 +113,6 @@ class Scrapper():
             if re.match(r'^((,| )*\b\d+\b(,| )*)+$', response):
                 output = [int(r) for r in re.findall(r'\b\d+\b', response)]
                 break
-        [callback(i) if i < len(choices) else errorCallback(i) for i in sorted(output, reverse=True)]
+        [callback(i) if i < len(choices) else errorCallback(i) for i in sorted(output, reverse=reverse_callback_order)]
         return
     

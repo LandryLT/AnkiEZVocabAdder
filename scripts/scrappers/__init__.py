@@ -4,6 +4,6 @@ from .JishoSearchResult import JishoResult, JishoSearchResultRaw, Meaning, parse
 from .JishoSelectMode import JishoSelectMode
 from .NeocitiesScrapper import NeocitiesResult, NeocitiesScrapper
 from .NeocitiesSelectMode import NeocitiesSelectMode
-from .KanjiScrapper import KanjiScrapper
-from .KanjiResults import KanjiResults
+from .KanjiScrapper import KanjiScrapper, kanji_img_cache, kanji_page_cache
+from .KanjiResults import KanjiResult
 from .VocabScrapper import VocabScrapper

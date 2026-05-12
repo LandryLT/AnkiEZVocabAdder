@@ -4,6 +4,8 @@ from scripts.scrappers.VocabScrapper import VocabScraperResult
 from scripts.scrappers.JishoSearchResult import JishoResult
 from scripts.anki.ankiModelGenerator import AnkiModelGen
 from scripts.anki.ankiDeckGenerator import AnkiDeckGen
+from scripts.anki.ankiKanjiNoteGenerator import AnkiKanjiNoteGen
+from scripts.anki.ankiVocabNoteGenerator import AnkiVocabNoteGen
 from anki.storage import Collection
 from anki.notes import Note
 
@@ -22,12 +24,15 @@ class Ankifier():
         self.col_path = self.findCollections() if not col_path else col_path
         if not Path(col_path).is_file():
             raise Ankifier.ColNotFound
+    
     def __enter__(self):
         self.col = Collection(self.col_path)
         model_gen = AnkiModelGen(self.col, self.vocab_model_name, self.kanji_model_name)
         self.models = model_gen.findModels()
         deck_gen = AnkiDeckGen(self.col)
         self.decks = deck_gen.findDecks()
+        self.vocab_gen = AnkiVocabNoteGen(self.col, self.decks, self.models)
+        self.kanji_gen = AnkiKanjiNoteGen(self.col, self.decks, self.models)
 
     def __exit__(self, exc_type, exc, tb):
         self.col.close()
