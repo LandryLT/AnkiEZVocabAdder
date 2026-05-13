@@ -15,7 +15,7 @@ VocabScraperResult = NamedTuple('VocabScraperResult', [('jisho', JishoResult), (
 class VocabScrapper():
     logger = logging.getLogger(__name__)
     
-    def __init__(self, max_display):
+    def __init__(self, max_display:int):
         self.max_rez_display = max_display
         self.all_kanjis = []
 
@@ -31,8 +31,10 @@ class VocabScrapper():
                        printout_rez = False): 
         
         # Navigate through vocab list
+
         jisho_mode.setAutoselectExpressionMode()
-        selected_expr = await self.jisho.selectExpressions(vocab_list, jisho_mode.autoselect_expression_mode, jisho_mode.is_exact_match_autoselect)
+        jisho_mode.setAutoSelectJLPTFilter()
+        selected_expr = await self.jisho.selectExpressions(vocab_list, jisho_mode.autoselect_expression_mode, jisho_mode.is_exact_match_autoselect, jisho_mode.jlpt_filter)
         jisho_mode.setAudioAutoDownload()
         selected_expr = await self.jisho.downloadSounds(selected_expr, jisho_mode.enable_word_sound_download, jisho_mode.auto_download_sounds)
         jisho_mode.setAutoselectMeaningMode()
@@ -42,10 +44,22 @@ class VocabScrapper():
         self.all_kanjis = list(set(self.all_kanjis))
 
         # Look for sentences
-        neocities_mode.setAutoMode()
+        await neocities_mode.setAutoMode()
         selected_sentences = await self.neocities.selectSentence(selected_expr, neocities_mode)
-        await self.neocities.downloadSounds(selected_sentences, neocities_mode.download_audio)
-        selected_rez = [VocabScraperResult(jisho, neocities) for jisho, neocities in zip(selected_expr, selected_sentences)]
+        selected_sentences = await self.neocities.downloadSounds(selected_sentences, neocities_mode.download_audio)
+        selected_pairs = []
+        for expr in selected_expr:
+            for i, sen in enumerate(selected_sentences):
+                if not sen:
+                    selected_pairs.append((expr, []))                    
+                    break
+                if sen[0].jisho_uuid == expr.uuid:
+                    selected_pairs.append((expr, selected_sentences.pop(i)))                    
+                    break
+            else:
+                selected_pairs.append((expr, []))
+
+        selected_rez = [VocabScraperResult(jisho, neocities) for jisho, neocities in selected_pairs]
         
         if not printout_rez:
             return selected_rez

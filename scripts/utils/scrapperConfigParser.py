@@ -9,7 +9,9 @@ class scrapperConfigParser():
         self.autoselect_sentence = NeocitiesSelectMode()
         self.max_results_displayed = 20
         self.anki_col_path = None
+        self.use_cache = None
         self.clear_cache_on_complete = None
+        self.clear_vocab_on_complete = None
         with open(filepath, 'r') as f:
             lines = [l for l in f.readlines() if not match(r'^\#', l)]
             params = {}
@@ -26,6 +28,8 @@ class scrapperConfigParser():
                         self.max_results_displayed = self.parseInt(item)
                     case "expression_autoselect":
                         self.autoselect_definition.autoselect_expression_mode = self.parseSelectMode(item)
+                    case "jlpt_filter":
+                        self.autoselect_definition.jlpt_filter = self.parseInt(item)
                     case "exact_match_autoselect":
                         self.autoselect_definition.is_exact_match_autoselect = self.parseBool(item)
                     case "meaning_autoselect":
@@ -50,8 +54,12 @@ class scrapperConfigParser():
                         self.autoselect_sentence.download_audio = self.parseBool(item)
                     case "anki_collection_file_path":
                         self.anki_col_path = self.parsePath(item)
+                    case "use_cache":
+                        self.use_cache = self.parseBool(item)
                     case "clear_cache_on_complete":
                         self.clear_cache_on_complete = self.parseBool(item)
+                    case "clear_vocab2add_complete":
+                        self.clear_vocab_on_complete = self.parseBool(item)
 
         self.parsedParams = {
             "jisho_mode": self.autoselect_definition,

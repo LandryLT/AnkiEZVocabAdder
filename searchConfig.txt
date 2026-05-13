@@ -10,10 +10,16 @@
 #
 #       max_results_displayed:      Max search results to display in one block
 #       anki_collection_file_path:  Path to anki collection
+#       use_cache:                  Use cached data if found
+#       clear_cache_on_complete:    Clear cache at the end of the program
+#       clear_vocab2add_complete:   Clear list of vocab to search at the end of the program
 #
 #   Expressions______
 #
 #       expression_autoselect:      Select which search results to keep.
+#       jlpt_filter:                Filters out search results higher or equal to the given
+#                                   JLPT level. Just to be clear: JLPT 1 is higher than JLPT 5.
+#                                   (Only available if sentence_select_mode is set to AUTO) 
 #       exact_match_autoselect:     Auto-select first result if expression, furigana or romaji 
 #                                   matches search term exactly. 
 #                                   (Only available if expression_autoselect is set to SELECT) 
@@ -49,19 +55,28 @@ max_results_displayed=20
 # NONE, [path to anki collection]
 anki_collection_file_path=C:/Users/landr/AppData/Roaming/Anki2/TEST/collection.anki2
 
-# NONE, YES, NONE
-clear_cache_on_complete=NONE
+# NONE, YES, NO
+use_cache=NONE
+
+# NONE, YES, NO
+clear_cache_on_complete=NO
+
+# NONE, YES, NO
+clear_vocab2add_complete=NO
 
 #_Expressions________________________________________________
 
 # NONE, FIRST, SELECT, ALL
 expression_autoselect=SELECT
 
+# NONE, [0-5]
+jlpt_filter=4
+
 # NONE, YES, NO
-exact_match_autoselect=NO
+exact_match_autoselect=NONE
 
 # NONE, FIRST, SELECT, ALL
-meaning_autoselect=SELECT
+meaning_autoselect=ALL
 
 
 #_Audio______________________________________________________
@@ -91,7 +106,7 @@ sentence_quantity=5
 sentence_min_length=0
 
 # NONE, [0-...]
-sentence_max_length=9999
+sentence_max_length=999999
 
 # NONE, EVEN, RANDOM
 sentence_len_distribution=EVEN

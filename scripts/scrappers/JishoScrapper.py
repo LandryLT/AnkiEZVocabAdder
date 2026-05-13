@@ -19,8 +19,8 @@ class JishoScrapper(Scrapper):
         super().__init__(page, max_rez_display)
 
     @cacheable(expression_cache)
-    @oopsable()
-    async def selectExpressions(self, vocab_list: list[str], mode: JishoSelectMode.SelectMode = None, is_exact_match_autoselect: bool = False) -> list[JishoResult]:        
+    @oopsable(expression_cache)
+    async def selectExpressions(self, vocab_list: list[str], mode: JishoSelectMode.SelectMode = None, is_exact_match_autoselect: bool = False, jlpt_filter: int = 0) -> list[JishoResult]:        
         expression_question = True
         output = []
         # def prepare_cached_output_func(rez: JishoResult, cached_search_terms: str):
@@ -34,6 +34,7 @@ class JishoScrapper(Scrapper):
             word = word.replace('\r\n', "")
             header = f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(uncached_vocab_list)} search terms)")}\n'
             jisho_results = await self.jishoSearchTerm(word, header)
+            jisho_results = list(filter(lambda r: r.JLPT >= jlpt_filter, jisho_results))
             clearConsole()
             print(f'[{bold(word)}] {grey(f"({word_ind + 1}/{len(uncached_vocab_list)} search terms)")}\n')
             
@@ -59,7 +60,7 @@ class JishoScrapper(Scrapper):
         return output
     
     @cacheable(sound_cache)
-    @oopsable()
+    @oopsable(sound_cache)
     async def downloadSounds(self, selected_expr: list[JishoResult], enable:bool = True, auto_download: bool = None) -> list[JishoResult]:
         if not enable:
             return selected_expr
@@ -89,11 +90,11 @@ class JishoScrapper(Scrapper):
             clearConsole()
             print(f'[{expression.search_term} - {bold(expression.expression)}] {grey(f"({i + 1}/{len(expr_with_links_to_download)} sounds to download)")}\n')
             print(italic(grey(f'Downloading audio from jisho.org')))
-            await expression.downloadSound()
+            await expression.downloadSound(cache_on_append_result)
         return selected_expr
         
     @cacheable(meaning_cache)
-    @oopsable()
+    @oopsable(meaning_cache)
     async def selectMeanings(self, selected_expr: list[JishoResult], mode: JishoSelectMode.SelectMode = JishoSelectMode.SelectMode.NONE) -> list[JishoResult]:     
         results_uuids = [se.uuid for se in selected_expr]
         output = []
@@ -102,7 +103,7 @@ class JishoScrapper(Scrapper):
         # Update soundfile links
         for ca_rez in cached_rez:
             assert isinstance(ca_rez, JishoResult)
-            ca_rez.soundfile = list(filter(lambda x: x.uuid == ca_rez.uuid, selected_expr))[0]
+            ca_rez.soundfile = list(filter(lambda x: x.uuid == ca_rez.uuid, selected_expr))[0].soundfile
         output = cached_rez + [expr for expr in selected_expr.copy() if expr.uuid in uncached_uuids]
         
         expression_question = True
@@ -115,13 +116,12 @@ class JishoScrapper(Scrapper):
             if mode == JishoSelectMode.SelectMode.SELECT and len(expression.meanings) > 1:
                 selected_def = []
                 self.promptForSelection(choices=[f"{italic(m.meaning)}" for m in expression.meanings], 
-                                        input_text=(grey("Meanings indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')+grey(italic('(ll)'))}) " if expression_question else "") + ": ",
+                                        input_text=(grey("Meanings indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')+grey(italic('(ll)'))} {grey('or')} {bold('n')+grey(italic('(one)'))}) " if expression_question else "") + ": ",
                                         header=f'[{expression.search_term} - {bold(expression.expression)} ({expression.furigana})] {grey(f"({i + 1}/{len(output)} expressions to check)")}\n'+
                                                     grey(f"\nPlease select meanings to keep"),
-                                        callback=lambda i: selected_def.append(expression.meanings[i]),
-                                        use_none=False)
+                                        callback=lambda i: selected_def.append(expression.meanings[i]))
                 expression_question = False
-                expression.meanings = selected_def
+                expression.meanings = list(filter(lambda x: not x is None, selected_def))
 
             elif mode == JishoSelectMode.SelectMode.FIRST:
 

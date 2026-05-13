@@ -1,7 +1,7 @@
 from enum import Enum
 import re
 from scripts.utils.printingUtils import grey, bold, clearConsole
-from scripts.scrappers.Scrapper import Scrapper
+from scripts.scrappers.Scrapper import Scrapper, oopsable
 
 class NeocitiesSelectMode():
     class SelectMode(Enum):
@@ -58,7 +58,8 @@ class NeocitiesSelectMode():
             if not response:
                 continue
             self.max_length = int(response.group(0))
-
+    
+    
     def setDistributionMode(self):
         if self.length_distribution != NeocitiesSelectMode.LengthDistribution.NONE or self.mode == self.SelectMode.MANUAL:
             return
@@ -70,7 +71,7 @@ class NeocitiesSelectMode():
             if not response:
                 self.length_distribution = NeocitiesSelectMode.LengthDistribution.EVEN
                 break
-            response = re.match(r'^[1-2]$', response)
+            response = re.match(r'^\s?[1-2]\s?$', response)
             if not response:
                 continue
             self.length_distribution = NeocitiesSelectMode.LengthDistribution(int(response.group(0))-1)
@@ -88,8 +89,8 @@ class NeocitiesSelectMode():
         while self.download_audio == None:
             self.download_audio = not re.match(r'(?i:^y(es)?$)', Scrapper._checkAbortResponse(grey('Disable downloading audio for sentences ? ') + f"({bold('y')}|{bold('n')}) {grey(':')} ")) != None
 
-
-    def setAutoMode(self):
+    @oopsable()
+    async def setAutoMode(self):
         clearConsole()
         self.setMode()
         self.setQuantity()

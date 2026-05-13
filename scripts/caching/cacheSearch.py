@@ -13,6 +13,7 @@ class SearchCache():
         self.cache = self.load_pickled_cache()
 
     def clearCache(self):
+        self.cache = {}
         if self.cache_path.is_file():
             os.remove(self.cache_path)
 

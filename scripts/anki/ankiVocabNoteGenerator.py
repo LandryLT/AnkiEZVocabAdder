@@ -58,7 +58,7 @@ class AnkiVocabNoteGen(AnkiNoteGen):
         new_note["Romaji"] = f'<div class="romaji">{jisho_rez.romaji}</div>'
         new_note["JLPT"] = f'<div class="jlpt">{jisho_rez.JLPT}</div>'
         
-        # new_note["Kanjis"] <------- Do later
+        new_note["Kanjis"] = ""
         new_note["Meanings"] = self.setMeanings(jisho_rez.meanings)
         new_note["Audio"] = self.addAudio(jisho_rez.soundfile)
         new_note["Transitivity"] = self.setTransitivity(jisho_rez.meanings)
@@ -74,24 +74,28 @@ class AnkiVocabNoteGen(AnkiNoteGen):
             output += f'<div class="m_tag">{m.tag}</div>'
             output += f'<div><span class="m_ind">{i+1}.</span><span class="m_mean">{m.meaning}</span></div><br/>'
         output += '</div>'
-        pass
+        return output
 
     def setInflections(self, new_note: Note, inflections: dict | None) -> Note:
-        if not inflections:
-            return new_note
+        # if not inflections:
+        #     return new_note
         modes = ["Affirmative", "Negative"]
-        for infl in inflections.keys():
+        for infl in ["Non-past", "Non-past polite", "Past", "Past polite", "Te-form", "Potential", "Passive", "Causative", "Causative Passive", "Imperative"]:
             for i in range(2):
-                new_note[f"Inflection - {infl} - {modes[i]}"] = inflections[infl][i]
+                new_note[f"Inflection - {infl} - {modes[i]}"] = '' if not inflections or infl not in inflections.keys() else inflections[infl][i]
         return new_note
 
     def setSentences(self, new_note: Note, sentences: list[NeocitiesResult]) -> Note:
-        for i, s in enumerate(sentences):
-            if i > 19:
-                break
-            new_note[f'Sentence {i+1} Japanese'] = f'<div class="jap_sentence">{s.japanese}</div>'
-            new_note[f'Sentence {i+1} English'] = f'<div class="eng_sentence">{s.english}</div>'
-            new_note[f'Sentence {i+1} Audio'] = self.addAudio(s.soundfile)
+        for i in range(20):
+            if i >= len(sentences):
+                new_note[f'Sentence {i+1} Japanese'] = ""
+                new_note[f'Sentence {i+1} English'] = ""
+                new_note[f'Sentence {i+1} Audio'] = ""
+            else:    
+                s = sentences[i]
+                new_note[f'Sentence {i+1} Japanese'] = f'<div class="jap_sentence">{s.japanese}</div>'
+                new_note[f'Sentence {i+1} English'] = f'<div class="eng_sentence">{s.english}</div>'
+                new_note[f'Sentence {i+1} Audio'] = self.addAudio(s.soundfile)
 
         return new_note
 

@@ -80,8 +80,8 @@ class JishoResult():
 
     async def downloadSound(self, save_cache_callback: Callable | None) -> str:
         if not self.soundlink:
-            return
-        download_file_name = f'{self.expression}_{str(uuid.uuid1())}.mp3'
+            return None
+        download_file_name = f'{self.expression}_{self.uuid}.mp3'
         download_file_path = word_audio_folder + download_file_name
         r = await asyncio.get_event_loop().run_in_executor(None, requests.get, self.soundlink)
         with open(download_file_path, "wb") as file:

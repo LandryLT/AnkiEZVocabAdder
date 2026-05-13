@@ -8,6 +8,7 @@ from scripts.anki.ankiKanjiNoteGenerator import AnkiKanjiNoteGen
 from scripts.anki.ankiVocabNoteGenerator import AnkiVocabNoteGen
 from anki.storage import Collection
 from anki.notes import Note
+from anki.errors import DBError
 
 from pathlib import Path
 import os
@@ -26,7 +27,11 @@ class Ankifier():
             raise Ankifier.ColNotFound
     
     def __enter__(self):
-        self.col = Collection(self.col_path)
+        try:
+            self.col = Collection(self.col_path)
+            self.logger.critical(self.col.fix_integrity())
+        except DBError as e:
+            raise Ankifier.AnkiAlreadyOpen
         model_gen = AnkiModelGen(self.col, self.vocab_model_name, self.kanji_model_name)
         self.models = model_gen.findModels()
         deck_gen = AnkiDeckGen(self.col)
@@ -38,11 +43,11 @@ class Ankifier():
         self.col.close()
 
     def conflictingKanjis(self, kanjis: list[str]):
-        curr_kanji = [self.col.get_note(n)["Kanji"] for n in self.col.find_cards(f'note:{self.kanji_model_name}')]
+        curr_kanji = [self.col.get_note(n)["Kanji"] for n in self.col.find_notes(f'note:{self.kanji_model_name}')]
         return [k for k in kanjis if k in curr_kanji]
     
     def conflictingVocab(self, scrapper_results: VocabScraperResult):
-        curr_vocab = [self.col.get_note(n) for n in self.col.find_cards(f'note:{self.vocab_model_name}')]
+        curr_vocab = [self.col.get_note(n) for n in self.col.find_notes(f'note:{self.vocab_model_name}')]
         conflicting_results = []
         for rez in scrapper_results:
             assert isinstance(rez, VocabScraperResult)
@@ -94,5 +99,8 @@ class Ankifier():
             f.write(lines)  
 
     class ColNotFound(Exception):
+        def __init__(self, *args):
+            super().__init__(*args)
+    class AnkiAlreadyOpen(Exception):
         def __init__(self, *args):
             super().__init__(*args)

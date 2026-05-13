@@ -34,12 +34,16 @@ class AnkiKanjiNoteGen(AnkiNoteGen):
         for i in range(10):
             for yomi in compounds.keys():
                 if i >= len(compounds[yomi]):
-                    break
+                    new_note[f'{yomi} Compound {i+1} Word'] = ""
+                    new_note[f'{yomi} Compound {i+1} Furigana'] = ""
+                    new_note[f'{yomi} Compound {i+1} Meaning'] = ""
+                    continue
                 compound_match = re.match(r'^(([一-龯]|[ぁ-ゔ]|[ァ-ヴー]|[a-zA-Z0-9]|[ａ-ｚＡ-Ｚ０-９]|[々〆〤ヶ])+) 【(([一-龯]|[ぁ-ゔ]|[ァ-ヴー]|[a-zA-Z0-9]|[ａ-ｚＡ-Ｚ０-９]|[々〆〤ヶ])+)】 (.+)$', compounds[yomi][i])
                 if not compound_match:
                     break
-                new_note[f'{yomi} - Compound {i+1} Word'] = compound_match.group(1)
-                new_note[f'{yomi} - Compound {i+1} Furigana'] = compound_match.group(3)
-                new_note[f'{yomi} - Compound {i+1} Meaning'] = compound_match.group(5)
+                new_note[f'{yomi} Compound {i+1} Word'] = compound_match.group(1)
+                new_note[f'{yomi} Compound {i+1} Furigana'] = compound_match.group(3)
+                new_note[f'{yomi} Compound {i+1} Meaning'] = compound_match.group(5)
+        return new_note
 
 

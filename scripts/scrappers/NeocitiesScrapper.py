@@ -32,7 +32,7 @@ class NeocitiesScrapper(Scrapper):
         page_cache.clearCache()
 
     @cacheable(sentence_cache)
-    @oopsable()
+    @oopsable(sentence_cache)
     async def selectSentence(self, selected_expr: list[JishoResult], mode: NeocitiesSelectMode = None) -> list[list[NeocitiesResult]]:
         if mode.quantity == 0:
             return [*[[]]*len(selected_expr)]
@@ -102,7 +102,7 @@ class NeocitiesScrapper(Scrapper):
                         invalid_input.append(i)
 
                     filtered_chunks = []
-                    # input_text = (grey("Sentences indices to remove from selection ") if expression_question else "") + grey(f"[{len(neocities_rez)-len(indices_to_remove + selected_ind)} remaining sentences]\n") + (f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')+grey(italic('(ll)'))} {grey('or')} {bold('n')+grey(italic('(one)'))}) " if expression_question else "") + ": "
+                    input_text = (grey("Sentences indices to remove from selection ") if expression_question else "") + grey(f"[{len(neocities_rez)-len(indices_to_remove + selected_ind)} remaining sentences]\n") + (f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')+grey(italic('(ll)'))} {grey('or')} {bold('n')+grey(italic('(one)'))}) " if expression_question else "") + ": "
                     expression_question = False
                     self.promptForSelection(choices=choices,
                                             input_text=input_text,
@@ -143,7 +143,7 @@ class NeocitiesScrapper(Scrapper):
             choices[ind] = choice
 
     @cacheable(sound_cache)
-    async def downloadSounds(self, sentence_groups: list[list[NeocitiesResult]], enable: bool = True):
+    async def downloadSounds(self, sentence_groups: list[list[NeocitiesResult]], enable: bool = True) -> list[list[NeocitiesResult]]:
         if not enable or not sentence_groups:
             return
         
@@ -152,7 +152,14 @@ class NeocitiesScrapper(Scrapper):
         [flat_sentences.extend(grp) for grp in sentence_groups]
         print(italic(grey(f'Downloading audio for {len(flat_sentences)} sentences from sentencesearch.neocities.org...')))
         download_cors = [self._downloadSound(s) for s in flat_sentences]
-        await tqdm.gather(*download_cors, bar_format=tqdm_bar_format)
+        flat_sentences: list[NeocitiesResult] = await tqdm.gather(*download_cors, bar_format=tqdm_bar_format)
+        output = {}
+        for sen in flat_sentences:
+            if not sen.jisho_uuid in output.keys():
+                output[sen.jisho_uuid] = [sen]
+            else:
+                output[sen.jisho_uuid].append(sen)
+        return list(output.values())
 
     @cacheable(page_cache)
     async def neo_cities_search_term(self, search_term: str, expression: str, header: str, jisho_uuid: str) -> list[NeocitiesResult]:
@@ -210,18 +217,18 @@ class NeocitiesScrapper(Scrapper):
             }
             """)
 
-        return [NeocitiesResult(**rez, expression=expression, soundfile=None, search_term=search_term, jisho_uuid=jisho_uuid, uuid=uuid.uuid1()) for rez in output]
+        return [NeocitiesResult(**rez, expression=expression, soundfile=None, search_term=search_term, jisho_uuid=jisho_uuid, uuid=str(uuid.uuid1())) for rez in output]
             
     @staticmethod
     def _neocitiessearch(term: str) -> str:
         return f'https://sentencesearch.neocities.org/#{term}'
     
-    async def _downloadSound(self, sentence: NeocitiesResult) -> str:
+    async def _downloadSound(self, sentence: NeocitiesResult) -> NeocitiesResult:
         if not sentence.audio_link:
             return
         if sentence.uuid in sound_cache.cache.keys() and os.path.isfile(sound_cache.cache[sentence.uuid][0].soundfile):
-            sentence._replace(soundfile=sound_cache.cache[sentence.uuid][0].soundfile)
-            return sentence.soundfile
+            sentence = sentence._replace(soundfile=sound_cache.cache[sentence.uuid][0].soundfile)
+            return sentence
         download_file_name = f'{sentence.expression}_sentence_{str(uuid.uuid1())}.mp3'
         download_file_path = sentence_audio_folder + download_file_name
         

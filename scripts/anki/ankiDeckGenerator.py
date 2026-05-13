@@ -1,16 +1,16 @@
 from anki.storage import Collection
-from anki.decks import Deck
+from anki.decks import DeckDict
 import logging
 from copy import deepcopy
 from typing import NamedTuple
 
-VocabVerb = NamedTuple("VocabVerb", [("deck", Deck), ("transitive", Deck), ("intransitive", Deck)])
-VocabAdj = NamedTuple("VocabAdj", [("deck", Deck), ("i", Deck), ("na", Deck)])
-VocabJLPTDeck = NamedTuple("VocabJLPTDeck", [("deck", Deck), ("verbs", VocabVerb), ("adjectives", VocabAdj), ("nouns", Deck), ("expressions", Deck)])
+VocabVerb = NamedTuple("VocabVerb", [("deck", DeckDict), ("transitive", DeckDict), ("intransitive", DeckDict)])
+VocabAdj = NamedTuple("VocabAdj", [("deck", DeckDict), ("i", DeckDict), ("na", DeckDict)])
+VocabJLPTDeck = NamedTuple("VocabJLPTDeck", [("deck", DeckDict), ("verbs", VocabVerb), ("adjectives", VocabAdj), ("nouns", DeckDict), ("expressions", DeckDict)])
 
-VocabDecks = NamedTuple("VocabDecks", [("deck", Deck), ("n1", VocabJLPTDeck), ("n2", VocabJLPTDeck), ("n3", VocabJLPTDeck), ("n4", VocabJLPTDeck), ("n5", VocabJLPTDeck)])
-KanjiDecks = NamedTuple("KanjiDecks", [("deck", Deck), ("n1", Deck), ("n2", Deck), ("n3", Deck), ("n4", Deck), ("n5", Deck)])
-EZDecks = NamedTuple("EZDecks", [("deck", Deck), ("vocab", VocabDecks), ("kanji", KanjiDecks)])
+VocabDecks = NamedTuple("VocabDecks", [("deck", DeckDict), ("n1", VocabJLPTDeck), ("n2", VocabJLPTDeck), ("n3", VocabJLPTDeck), ("n4", VocabJLPTDeck), ("n5", VocabJLPTDeck)])
+KanjiDecks = NamedTuple("KanjiDecks", [("deck", DeckDict), ("n1", DeckDict), ("n2", DeckDict), ("n3", DeckDict), ("n4", DeckDict), ("n5", DeckDict)])
+EZDecks = NamedTuple("EZDecks", [("deck", DeckDict), ("vocab", VocabDecks), ("kanji", KanjiDecks)])
 
 class AnkiDeckGen():
     logger = logging.getLogger(__name__)
