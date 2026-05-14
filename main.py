@@ -11,6 +11,8 @@ from scripts.anki.ankifier import Ankifier
 from scripts.utils.printingUtils import clearConsole, bold, italic, grey
 import asyncio
 import re
+from tqdm import tqdm
+from scripts.utils.printingUtils import tqdm_bar_format
 
 vocab_filepath = "./vocab2add.txt"
 scrapperConfig_filepath = "./searchConfig.txt"
@@ -62,12 +64,18 @@ async def main():
             vocab_results = await scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)
             try:
                 with ankifier:
-                    conflicting_results = ankifier.conflictingVocab(vocab_results)
-                    kanji_results = await scrapper.searchForKanjis([k for k in scrapper.all_kanjis if not k in ankifier.conflictingKanjis(scrapper.all_kanjis)])
-                    new_vocab_notes = [ankifier.vocab_gen.genVocabNote(r) for r in vocab_results]
+                    clearConsole()
+                    print(italic(grey(f"Generating {len(vocab_results)} new vocabulary Anki note")))
+                    new_vocab_notes = [ankifier.vocab_gen.genVocabNote(r) for r in tqdm(vocab_results, bar_format=tqdm_bar_format)]
+                    ankifier.resolveConflictingVocab(new_vocab_notes)
+                    
+                    kanji_results = await scrapper.searchForKanjis(ankifier.resolveNewKanjis(scrapper.all_kanjis))
                     new_kanji_notes = [ankifier.kanji_gen.genKanjiNote(r) for r in kanji_results]
-                    [ankifier.vocab_gen.submitNoteToVocabDeck(n) for n in new_vocab_notes]
                     [ankifier.kanji_gen.submitNoteToKanjiDeck(n) for n in new_kanji_notes]
+                    kanjis_images = ankifier.kanji_gen.getAllKanjiImages(scrapper.all_kanjis)
+                    ankifier.vocab_gen.setKanjisStrokes(new_vocab_notes, kanjis_images)
+                    [ankifier.vocab_gen.submitNoteToVocabDeck(n) for n in new_vocab_notes]
+                    
                     
                     # Clear cache
                     if config_parser.clear_cache_on_complete is None:

@@ -16,6 +16,11 @@ class AnkiKanjiNoteGen(AnkiNoteGen):
             return
         self.submitNoteToDeck(note, self.ordered_jlpt_decks[int(level.group(0))])
         
+    def getAllKanjiImages(self, kanjis:str):
+        output = {}
+        for k in kanjis:
+            output[k] = self.col.get_note(self.col.find_notes(f'note:{self.models.kanji["name"]} {k}')[0])["Stroke Order Image"]
+        return output
 
     def genKanjiNote(self, kanji_rez: KanjiResult) -> Note:
         new_note = self.col.new_note(self.models.kanji)
@@ -38,12 +43,12 @@ class AnkiKanjiNoteGen(AnkiNoteGen):
                     new_note[f'{yomi} Compound {i+1} Furigana'] = ""
                     new_note[f'{yomi} Compound {i+1} Meaning'] = ""
                     continue
-                compound_match = re.match(r'^(([一-龯]|[ぁ-ゔ]|[ァ-ヴー]|[a-zA-Z0-9]|[ａ-ｚＡ-Ｚ０-９]|[々〆〤ヶ])+) 【(([一-龯]|[ぁ-ゔ]|[ァ-ヴー]|[a-zA-Z0-9]|[ａ-ｚＡ-Ｚ０-９]|[々〆〤ヶ])+)】 (.+)$', compounds[yomi][i])
+                compound_match = re.match(r'^(.+)【(.+)】(.+)$', compounds[yomi][i])
                 if not compound_match:
                     break
                 new_note[f'{yomi} Compound {i+1} Word'] = compound_match.group(1)
-                new_note[f'{yomi} Compound {i+1} Furigana'] = compound_match.group(3)
-                new_note[f'{yomi} Compound {i+1} Meaning'] = compound_match.group(5)
+                new_note[f'{yomi} Compound {i+1} Furigana'] = compound_match.group(2)
+                new_note[f'{yomi} Compound {i+1} Meaning'] = compound_match.group(3)
         return new_note
 
 

@@ -1,5 +1,5 @@
 from playwright.async_api import Page, ElementHandle
-from re import findall, match
+import re
 from scripts.utils.furiganaToRomaji import convertToRomaji
 import requests
 import uuid
@@ -27,7 +27,7 @@ class JishoResult():
         self.search_term = search_term
         self.uuid = str(uuid.uuid1())
         self.expression = raw.expression
-        self.kanjis = findall(r'[一-龯]', self.expression)
+        self.kanjis = re.findall(r'[一-龯]', self.expression)
         self.furigana = parseFurigana(raw.expression, self.kanjis, raw.furiganas)
         self.romaji = convertToRomaji(self.furigana)
         self.is_exact_match = self.search_term in (self.expression, self.furigana, self.romaji) 
@@ -35,7 +35,7 @@ class JishoResult():
         self.tags = raw.tags
         self.JLPT = 0
         for tag in self.tags:
-            jlpt_tag = match(r'^jlpt n([1-5])$', tag)
+            jlpt_tag = re.match(r'^jlpt n([1-5])$', tag)
             if jlpt_tag:
                 self.JLPT = int(jlpt_tag.group(1))
                 break
@@ -76,7 +76,7 @@ class JishoResult():
         return [infl for tense in items for infl in tense]
     
     def setUsuallyWrittenInKana(self):
-        self.usually_kana = any(any(match(r"Usually written using kana alone", sup_inf) for sup_inf in  m.supplemental_info) for m in self.meanings)
+        self.usually_kana = any(any(re.match(r"Usually written using kana alone", sup_inf) for sup_inf in  m.supplemental_info) for m in self.meanings)
 
     async def downloadSound(self, save_cache_callback: Callable | None) -> str:
         if not self.soundlink:

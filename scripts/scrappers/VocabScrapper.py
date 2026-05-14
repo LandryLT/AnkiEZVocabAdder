@@ -5,10 +5,7 @@ from playwright.async_api import async_playwright
 from typing import NamedTuple
 import random
 from tqdm.asyncio import tqdm
-import os
-from scripts.scrappers.JishoSearchResult import word_audio_folder
-from scripts.scrappers.NeocitiesScrapper import sentence_audio_folder
-from scripts.scrappers.KanjiResults import image_folder
+from scripts.utils.utils import list_duplicates
 
 VocabScraperResult = NamedTuple('VocabScraperResult', [('jisho', JishoResult), ('neocities', list[NeocitiesResult])])
 
@@ -23,7 +20,6 @@ class VocabScrapper():
         self.jisho.clearCache()
         self.jisho_kanji.clearCache()
         self.neocities.clearCache()
-
 
     async def searchVocabList(self, vocab_list: list[str], 
                        jisho_mode: JishoSelectMode, 
@@ -49,12 +45,12 @@ class VocabScrapper():
         selected_sentences = await self.neocities.downloadSounds(selected_sentences, neocities_mode.download_audio)
         selected_pairs = []
         for expr in selected_expr:
-            for i, sen in enumerate(selected_sentences):
+            for key, sen in selected_sentences.items():
                 if not sen:
                     selected_pairs.append((expr, []))                    
                     break
-                if sen[0].jisho_uuid == expr.uuid:
-                    selected_pairs.append((expr, selected_sentences.pop(i)))                    
+                if key == expr.uuid:
+                    selected_pairs.append((expr, selected_sentences[key]))                    
                     break
             else:
                 selected_pairs.append((expr, []))
@@ -103,6 +99,7 @@ class VocabScrapper():
         self.jisho = JishoScrapper(self.page, self.max_rez_display)
         self.neocities = NeocitiesScrapper(self.page, self.max_rez_display)
         self.jisho_kanji = KanjiScrapper(self.page, self.max_rez_display)
+        return self
 
     async def __aexit__(self, exc_type, exc, tb):
         await self.browser.close()

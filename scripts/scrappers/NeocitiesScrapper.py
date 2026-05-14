@@ -12,6 +12,8 @@ import os
 import asyncio
 import requests
 from scripts.caching.cacheSearch import SearchCache
+from collections import defaultdict
+from copy import deepcopy
 
 NeocitiesResult = NamedTuple('NeocitiesResult', [("japanese", str), ("english", str), ("audio_link", str), ("soundfile", str), ("expression", str), ("search_term", str), ("jisho_uuid", str), ("uuid", str)])
 sentence_audio_folder = "./caches/audio/sentences/"
@@ -68,7 +70,7 @@ class NeocitiesScrapper(Scrapper):
                                         header=f'[{expression.search_term} - {bold(expression.expression)} ({expression.furigana})] {grey(f"({i + 1}/{len(all_expr)} sentences to set)")}\n{grey(italic(expression.meanings[0].meaning))}\n',
                                         callback=lambda i: selected_sentences.append(neocities_rez[i]))
                 expression_question = False
-                cache_result_func(expression.uuid,selected_sentences)
+                cache_result_func(expression.uuid, selected_sentences)
             else:
                 indices_to_remove = []
                 selected_ind = []
@@ -143,28 +145,27 @@ class NeocitiesScrapper(Scrapper):
             choices[ind] = choice
 
     @cacheable(sound_cache)
-    async def downloadSounds(self, sentence_groups: list[list[NeocitiesResult]], enable: bool = True) -> list[list[NeocitiesResult]]:
-        if not enable or not sentence_groups:
-            return
-        
+    async def downloadSounds(self, sentence_groups: list[list[NeocitiesResult]], enable: bool = True) -> defaultdict[list[NeocitiesResult]]:   
         clearConsole()
         flat_sentences = []
         [flat_sentences.extend(grp) for grp in sentence_groups]
+        output = defaultdict(list)
+        if not enable or not sentence_groups:
+            for sen in flat_sentences:
+                output[sen.jisho_uuid].append(sen)
+            return output
         print(italic(grey(f'Downloading audio for {len(flat_sentences)} sentences from sentencesearch.neocities.org...')))
         download_cors = [self._downloadSound(s) for s in flat_sentences]
         flat_sentences: list[NeocitiesResult] = await tqdm.gather(*download_cors, bar_format=tqdm_bar_format)
-        output = {}
         for sen in flat_sentences:
-            if not sen.jisho_uuid in output.keys():
-                output[sen.jisho_uuid] = [sen]
-            else:
-                output[sen.jisho_uuid].append(sen)
-        return list(output.values())
+            output[sen.jisho_uuid].append(sen)
+        return output
 
     @cacheable(page_cache)
     async def neo_cities_search_term(self, search_term: str, expression: str, header: str, jisho_uuid: str) -> list[NeocitiesResult]:
         if search_term in page_cache.cache.keys():
-            return page_cache.cache[search_term][0]
+            cached_rez = [r._replace(jisho_uuid=jisho_uuid) for r in deepcopy(page_cache.cache[search_term][0])]
+            return cached_rez
         clearConsole()
         print(italic(grey(f'Loading sentencesearch.neocities.org...')))
         await self.page.goto(self._neocitiessearch(search_term))
@@ -225,7 +226,7 @@ class NeocitiesScrapper(Scrapper):
     
     async def _downloadSound(self, sentence: NeocitiesResult) -> NeocitiesResult:
         if not sentence.audio_link:
-            return
+            return sentence
         if sentence.uuid in sound_cache.cache.keys() and os.path.isfile(sound_cache.cache[sentence.uuid][0].soundfile):
             sentence = sentence._replace(soundfile=sound_cache.cache[sentence.uuid][0].soundfile)
             return sentence

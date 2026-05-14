@@ -12,6 +12,15 @@ class AnkiVocabNoteGen(AnkiNoteGen):
         v_decks = self.decks.vocab
         self.ordered_jlpt_decks = [v_decks.deck, v_decks.n1, v_decks.n2, v_decks.n3, v_decks.n4, v_decks.n5]
     
+    @staticmethod
+    def setKanjisStrokes(notes: list[Note], kanjis_images: dict[str, str]):
+        for n in notes:
+            strokes = []
+            for k in re.findall(r'[一-龯]', n['Expression']):
+                strokes.append(kanjis_images[k])
+            n["Kanjis"] = "".join(strokes)
+
+
     def submitNoteToVocabDeck(self, note: Note):
         level_match = re.match(r'\d', note['JLPT'])
         if not level_match or level_match.group(0) == '0':
@@ -72,7 +81,7 @@ class AnkiVocabNoteGen(AnkiNoteGen):
         output = '<div class="meanings">'
         for i, m in enumerate(meanings):
             output += f'<div class="m_tag">{m.tag}</div>'
-            output += f'<div><span class="m_ind">{i+1}.</span><span class="m_mean">{m.meaning}</span></div><br/>'
+            output += f'<div><span class="m_ind">{i+1}.</span><span class="m_mean">{m.meaning}</span></div><br>'
         output += '</div>'
         return output
 
@@ -101,8 +110,8 @@ class AnkiVocabNoteGen(AnkiNoteGen):
 
     def setTransitivity(self, meanings: list[Meaning]) -> str:
         all_tags = [m.tag for m in meanings]
-        has_transitive = any([re.match(r"(?i:\btransitive\b)", t) for t in all_tags])
-        has_intransitive = any([re.match(r"(?i:\bintransitive\b)", t) for t in all_tags])
+        has_transitive = any([re.match(r".*(?i:\btransitive\b).*", t) for t in all_tags])
+        has_intransitive = any([re.match(r".*(?i:\bintransitive\b).*", t) for t in all_tags])
         def div_decorate(s: str):
             return f'<div class="transitiveness">{s}</div>'
         if has_intransitive and has_transitive:

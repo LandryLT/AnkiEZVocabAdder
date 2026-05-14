@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import NamedTuple, Any, TypedDict
 import pickle
 import os
-
+from collections import defaultdict
 
 SearchCacheData = dict[str, list[Any]]
 class SearchCache():
@@ -10,18 +10,15 @@ class SearchCache():
         if isinstance(cache_path, str):
             cache_path = Path(cache_path)
         self.cache_path: Path = cache_path
-        self.cache = self.load_pickled_cache()
+        self.cache = defaultdict(list, self.load_pickled_cache())
 
     def clearCache(self):
-        self.cache = {}
+        self.cache = defaultdict(list)
         if self.cache_path.is_file():
             os.remove(self.cache_path)
 
     def addToCache(self, key: str, value: Any):
-        if key in self.cache.keys():
-            self.cache[key].append(value)
-        else:
-            self.cache[key] = [value]
+        self.cache[key].append(value)
 
     def save_pickled_cache(self, cache_data: SearchCacheData | None = None):
         cache_data = self.cache if not cache_data else cache_data
