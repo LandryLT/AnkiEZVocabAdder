@@ -8,17 +8,27 @@ import logging
 from typing import Any
 from scripts.caching.cacheSearch import SearchCache
 
-def oopsable(cache: SearchCache | None = None):
+def oopsable(cache: SearchCache | None = None, is_async = True):
     def wrapper(f):
-        @functools.wraps(f)
-        async def wrap(*args, **kwargs):
-            while True:
-                try:
-                    return await f(*args, **kwargs)
-                except Scrapper.Oops:
-                    if cache:
-                        cache.cache = {}
-                    continue
+        if is_async:
+            @functools.wraps(f)
+            async def wrap(*args, **kwargs):
+                while True:
+                    try:
+                        return await f(*args, **kwargs)
+                    except Scrapper.Oops:
+                        if cache:
+                            cache.cache = {}
+                        continue
+        else:
+            def wrap(*args, **kwargs):
+                while True:
+                    try:
+                        return f(*args, **kwargs)
+                    except Scrapper.Oops:
+                        if cache:
+                            cache.cache = {}
+                        continue
         return wrap
     return wrapper
 

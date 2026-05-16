@@ -11,7 +11,7 @@ from anki.notes import Note
 from anki.errors import DBError
 from scripts.utils.utils import list_duplicates
 from datetime import datetime
-
+import math
 from pathlib import Path
 import os
 import re
@@ -62,10 +62,32 @@ class Ankifier():
             print(grey("Select duplicate resolution mode"))
             print(bold("\t1. ") + f"Keep oldest {grey('(keeps learning data)')}")
             print(bold("\t2. ") + f"Keep newest {grey('(updates card but deletes learning data)')}")
-            print(bold("\t3. ") + f"Select for each")
-            response = re.match(r'^[1-3]$', input(grey(": ")))
+            print(bold("\t3. ") + f"Transfer newest data to oldest {grey('(best of both worlds)')}")
+            print(bold("\t4. ") + f"Select for each")
+            response = re.match(r'^[1-4]$', input(grey(": ")))
             if response:
                 self.duplicate_resolve_mode = DuplicateRemoveMode(int(response.group()) - 1)
+
+    def transferNoteData(self, all_notes: list[Note], all_ids: list[int], new_notes: list[Note],  indices: list[int]):
+        oldest_note = all_notes[indices[0]]
+        newest_note = all_notes[indices[-1]]
+        for field_name in newest_note.keys():
+            if field_name in oldest_note and field_name != "Kanjis":
+                oldest_note[field_name] = newest_note[field_name]
+        self.col.update_note(oldest_note)
+        self.keepOldest(all_notes, all_ids, new_notes, indices)
+
+    def keepOldest(self, all_notes: list[Note], all_ids: list[int], new_notes: list[Note],  indices: list[int]):
+        for r in indices[1:]:
+            if all_ids[r] == 0:
+                new_notes.remove(all_notes[r])
+        self.col.remove_notes([all_ids[i] for i in indices[1:]])
+
+    def keepYoungest(self, all_notes: list[Note], all_ids: list[int], new_notes: list[Note],  indices: list[int]):
+        for r in indices[:-1]:
+            if all_ids[r] == 0:
+                new_notes.remove(all_notes[r])
+        self.col.remove_notes([all_ids[i] for i in indices[:-1]])
 
 
     def resolveConflictingVocab(self, new_notes: list[Note]) -> list[Note]:
@@ -79,7 +101,11 @@ class Ankifier():
         while True:
             clearConsole()
             print(italic(grey("Resovling duplicates")))
-            all_notes = [self.col.get_note(n) for n in self.col.find_notes(f'note:{self.vocab_model_name}')] + new_notes
+            def order_notes(n: Note):
+                if not n.id:
+                    return math.inf
+                return n.id
+            all_notes = sorted([self.col.get_note(n) for n in self.col.find_notes(f'note:{self.vocab_model_name}')] + new_notes, key=order_notes)
             if not all_notes:
                 return
             all_ids = [n.id for n in all_notes]
@@ -114,16 +140,12 @@ class Ankifier():
                     if len(meaning_groups) > 1:
                         if self.duplicate_resolve_mode is DuplicateRemoveMode.SELECT:
                             self.selectMeaningDuplicate(furi_inds, new_notes, all_notes, all_compare_expr, all_expr, all_ids)
+                        elif self.duplicate_resolve_mode is DuplicateRemoveMode.UPDATE:
+                            self.transferNoteData(all_notes, all_ids, new_notes, furi_inds)
                         elif self.duplicate_resolve_mode is DuplicateRemoveMode.OLDEST:
-                            for r in furi_inds[1:]:
-                                if all_ids[r] == 0:
-                                    new_notes.remove(all_notes[r])
-                            self.col.remove_notes([all_ids[i] for i in furi_inds[1:]])
+                            self.keepOldest(all_notes, all_ids, new_notes, furi_inds)
                         elif self.duplicate_resolve_mode is DuplicateRemoveMode.NEWEST:
-                            for r in furi_inds[:-1]:
-                                if all_ids[r] == 0:
-                                    new_notes.remove(all_notes[r])
-                            self.col.remove_notes([all_ids[i] for i in furi_inds[:-1]])
+                            self.keepYoungest(all_notes, all_ids, new_notes, furi_inds)
                         deleted_notes = True
                         break
                     meaning_inds = next(iter(meaning_groups.values()))
@@ -134,16 +156,22 @@ class Ankifier():
                     if len(sentence_groups) > 1:
                         if self.duplicate_resolve_mode is DuplicateRemoveMode.SELECT:
                             self.selectSentenceDuplicate(meaning_inds, new_notes, all_notes, all_compare_expr, all_expr, all_ids)
+                        elif self.duplicate_resolve_mode is DuplicateRemoveMode.UPDATE:
+                            self.transferNoteData(all_notes, all_ids, new_notes, meaning_inds)
                         elif self.duplicate_resolve_mode is DuplicateRemoveMode.OLDEST:
-                            for r in meaning_inds[1:]:
-                                if all_ids[r] == 0:
-                                    new_notes.remove(all_notes[r])
-                            self.col.remove_notes([all_ids[i] for i in meaning_inds[1:]])
+                            self.keepOldest(all_notes, all_ids, new_notes, meaning_inds)
                         elif self.duplicate_resolve_mode is DuplicateRemoveMode.NEWEST:
-                            for r in meaning_inds[:-1]:
-                                if all_ids[r] == 0:
-                                    new_notes.remove(all_notes[r])
-                            self.col.remove_notes([all_ids[i] for i in meaning_inds[:-1]])
+                            self.keepYoungest(all_notes, all_ids, new_notes, meaning_inds)
+                        # elif self.duplicate_resolve_mode is DuplicateRemoveMode.OLDEST:
+                        #     for r in meaning_inds[1:]:
+                        #         if all_ids[r] == 0:
+                        #             new_notes.remove(all_notes[r])
+                        #     self.col.remove_notes([all_ids[i] for i in meaning_inds[1:]])
+                        # elif self.duplicate_resolve_mode is DuplicateRemoveMode.NEWEST:
+                        #     for r in meaning_inds[:-1]:
+                        #         if all_ids[r] == 0:
+                        #             new_notes.remove(all_notes[r])
+                        #     self.col.remove_notes([all_ids[i] for i in meaning_inds[:-1]])
                         deleted_notes = True
                         break
                     sentence_inds = next(iter(sentence_groups.values()))

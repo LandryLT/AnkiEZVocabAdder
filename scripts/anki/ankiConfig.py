@@ -5,7 +5,8 @@ class DuplicateRemoveMode(Enum):
     NONE = -1
     OLDEST = 0
     NEWEST = 1
-    SELECT = 2
+    UPDATE = 2
+    SELECT = 3
 
 class AnkiConfig(NamedTuple):
     col_path: str

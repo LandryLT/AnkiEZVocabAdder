@@ -17,10 +17,11 @@ sound_cache = SearchCache("./caches/jisho/sndcache")
 class JishoScrapper(Scrapper):    
     def __init__(self, page, max_rez_display):
         super().__init__(page, max_rez_display)
+        self.no_results = []
 
     @cacheable(expression_cache)
     @oopsable(expression_cache)
-    async def selectExpressions(self, vocab_list: list[str], mode: JishoSelectMode.SelectMode = None, is_exact_match_autoselect: bool = False, jlpt_filter: int = 0) -> list[JishoResult]:        
+    async def selectExpressions(self, vocab_list: list[str], mode: JishoSelectMode.SelectMode | int = None, is_exact_match_autoselect: bool = False, jlpt_filter: int = 0) -> list[JishoResult]:        
         expression_question = True
         output = []
         # def prepare_cached_output_func(rez: JishoResult, cached_search_terms: str):
@@ -42,7 +43,13 @@ class JishoScrapper(Scrapper):
             if not jisho_results:
                 continue
             # Exact match and auto-select
-            if mode == JishoSelectMode.SelectMode.FIRST or (mode == JishoSelectMode.SelectMode.SELECT and is_exact_match_autoselect and jisho_results[0].is_exact_match) or len(jisho_results) == 1:
+            if not isinstance(mode, JishoSelectMode.SelectMode):
+                assert isinstance(mode, int)
+                for i in range(min(len(jisho_results), mode)):
+                    cache_on_append_result(jisho_results[i].search_term, jisho_results[i])
+                continue
+
+            if (mode == JishoSelectMode.SelectMode.SELECT and is_exact_match_autoselect and jisho_results[0].is_exact_match) or len(jisho_results) == 1:
                 if jisho_results[0].is_exact_match:
                     self.logger.warning(f"Found exact match for {word} !")
                 cache_on_append_result(jisho_results[0].search_term, jisho_results[0])
@@ -113,20 +120,19 @@ class JishoScrapper(Scrapper):
                 continue
             clearConsole()
             print(f'[{expression.search_term} - {bold(expression.expression)} ({expression.furigana})] {grey(f"({i + 1}/{len(output)} search terms)")}\n')
-            if mode == JishoSelectMode.SelectMode.SELECT and len(expression.meanings) > 1:
-                selected_def = []
+            selected_def = []
+            if not isinstance(mode, JishoSelectMode.SelectMode):
+                assert isinstance(mode, int)
+                selected_def = expression.meanings[:min(len(expression.meanings), mode)]
+            elif mode == JishoSelectMode.SelectMode.SELECT and len(expression.meanings) > 1:
                 self.promptForSelection(choices=[f"{italic(m.meaning)}" for m in expression.meanings], 
                                         input_text=(grey("Meanings indices to keep ") + f"({grey('ex:')} {bold('0, 2, 7')} {grey('or')} {bold('a')+grey(italic('(ll)'))} {grey('or')} {bold('n')+grey(italic('(one)'))}) " if expression_question else "") + ": ",
                                         header=f'[{expression.search_term} - {bold(expression.expression)} ({expression.furigana})] {grey(f"({i + 1}/{len(output)} expressions to check)")}\n'+
                                                     grey(f"\nPlease select meanings to keep"),
                                         callback=lambda i: selected_def.append(expression.meanings[i]))
                 expression_question = False
-                expression.meanings = list(filter(lambda x: not x is None, selected_def))
-
-            elif mode == JishoSelectMode.SelectMode.FIRST:
-
-                expression.meanings = [expression.meanings[0]]
-
+            
+            expression.meanings = list(filter(lambda x: not x is None, selected_def))
             cache_result(expression.uuid, expression)
             self.logger.debug(f"{[{expression.search_term} - {bold(expression.expression)}]}'s meanings: {expression.meanings}")
         return output

@@ -79,7 +79,10 @@ class NeocitiesScrapper(Scrapper):
                     filtered_indices = indices_to_remove + selected_ind
                     remaining = mode.quantity-len(selected_ind)
                     if len(neocities_rez)-len(filtered_indices) <= remaining:
-                        selected_sentences = [neocities_rez[i] for i in selected_ind]
+                        if not selected_ind:
+                            selected_sentences = neocities_rez
+                        else:
+                            selected_sentences = [neocities_rez[i] for i in selected_ind]
                         self.logger.info(f"{expression.expression} sentence result returned less results than asked for, returning all results")
                         cache_result_func(expression.uuid, selected_sentences)
                         break

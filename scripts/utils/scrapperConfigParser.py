@@ -28,13 +28,15 @@ class scrapperConfigParser():
                     case "max_results_displayed":
                         self.max_results_displayed = self.parseInt(item)
                     case "expression_autoselect":
-                        self.autoselect_definition.autoselect_expression_mode = self.parseSelectMode(item)
+                        int_attempt = self.parseInt(item)
+                        self.autoselect_definition.autoselect_expression_mode = int_attempt if int_attempt != -1 else self.parseSelectMode(item)
                     case "jlpt_filter":
                         self.autoselect_definition.jlpt_filter = self.parseInt(item)
                     case "exact_match_autoselect":
                         self.autoselect_definition.is_exact_match_autoselect = self.parseBool(item)
                     case "meaning_autoselect":
-                        self.autoselect_definition.autoselect_meaning_mode = self.parseSelectMode(item)
+                        int_attempt = self.parseInt(item)
+                        self.autoselect_definition.autoselect_meaning_mode = int_attempt if int_attempt != -1 else self.parseSelectMode(item)
                     case "word_audio_download":
                         self.autoselect_definition.enable_word_sound_download = not item == "NO"
                     case "word_audio_auto_download":
@@ -92,11 +94,11 @@ class scrapperConfigParser():
     
     @staticmethod
     def parseDeduplicationMode(value) -> DuplicateRemoveMode:
-        value = match(r'^(OLDEST|NEWEST|SELECT)$', value)
+        value = match(r'^(OLDEST|NEWEST|UPDATE|SELECT)$', value)
         if not value:
             return DuplicateRemoveMode.NONE
         value = value.group(0)
-        return DuplicateRemoveMode(["OLDEST", "NEWEST", "SELECT"].index(value))
+        return DuplicateRemoveMode(["OLDEST", "NEWEST", "UPDATE", "SELECT"].index(value))
 
 
     @staticmethod
@@ -117,11 +119,11 @@ class scrapperConfigParser():
     
     @staticmethod
     def parseSelectMode(value: str) -> JishoSelectMode.SelectMode:
-        value = match(r'^(FIRST|SELECT|ALL)$', value)
+        value = match(r'^(SELECT|ALL)$', value)
         if not value:
             return JishoSelectMode.SelectMode.NONE
         value = value.group(0)
-        return JishoSelectMode.SelectMode(["FIRST", "SELECT", "ALL"].index(value))
+        return JishoSelectMode.SelectMode(["SELECT", "ALL"].index(value))
     
     @staticmethod
     def parsePath(value: str) -> Path:

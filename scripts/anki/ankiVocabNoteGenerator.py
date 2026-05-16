@@ -29,7 +29,7 @@ class AnkiVocabNoteGen(AnkiNoteGen):
         level: VocabJLPTDeck = self.ordered_jlpt_decks[int(level_match.group(0))]
         
         def findTypeInTags(word_type: str):
-            pattern = re.compile(f'(?mi)(?<=<div class="m_tag">).*\b{word_type}\b.*(?=<\/div>)')
+            pattern = re.compile(f'(?mi)<div class="m_tag">[^<]*({word_type})[^<]*<\/div>')
             return len(re.findall(pattern, note["Meanings"]))
         
         intransitive_verb_matches = findTypeInTags("intransitive")

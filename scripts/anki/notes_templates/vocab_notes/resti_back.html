@@ -186,18 +186,18 @@
         </div>
         <button id="more_sens" onclick="revealSentences()">Reveal all sentences</button>
     </div>
-    <div id="inflection_container">  
-        <div class="infl_row">Non-Past<span class="affimative">{{Inflection - Non-past - Affirmative}}</span> <span class="negative">{{Inflection - Non-past - Negative}}</span></div>
-        <div class="infl_row">Non-past polite<span class="affimative">{{Inflection - Non-past polite - Affirmative}}</span> <span class="negative">{{Inflection - Non-past polite - Negative}}</span></div>
-        <div class="infl_row">Past<span class="affimative">{{Inflection - Past - Affirmative}}</span> <span class="negative">{{Inflection - Past - Negative}}</span></div>
-        <div class="infl_row">Past polite<span class="affimative">{{Inflection - Past polite - Affirmative}}</span> <span class="negative">{{Inflection - Past polite - Negative}}</span></div>
-        <div class="infl_row">Te-form<span class="affimative">{{Inflection - Te-form - Affirmative}}</span> <span class="negative">{{Inflection - Te-form - Negative}}</span></div>
-        <div class="infl_row">Potential<span class="affimative">{{Inflection - Potential - Affirmative}}</span> <span class="negative">{{Inflection - Potential - Negative}}</span></div>
-        <div class="infl_row">Passive<span class="affimative">{{Inflection - Passive - Affirmative}}</span> <span class="negative">{{Inflection - Passive - Negative}}</span></div>
-        <div class="infl_row">Causative<span class="affimative">{{Inflection - Causative - Affirmative}}</span> <span class="negative">{{Inflection - Causative - Negative}}</span></div>
-        <div class="infl_row">Causative Passive<span class="affimative">{{Inflection - Causative Passive - Affirmative}}</span> <span class="negative">{{Inflection - Causative Passive - Negative}}</span></div>
-        <div class="infl_row">Imperative<span class="affimative">{{Inflection - Imperative - Affirmative}}</span> <span class="negative">{{Inflection - Imperative - Negative}}</span></div>
-    </div>
+    <table id="inflection_container">  
+        <tr class="infl_row"><td class="infl_type">Non-Past</td><td class="affirmative">{{Inflection - Non-past - Affirmative}}</td> <td class="negative">{{Inflection - Non-past - Negative}}</td></tr>
+        <tr class="infl_row"><td class="infl_type">Non-past polite</td><td class="affirmative">{{Inflection - Non-past polite - Affirmative}}</td> <td class="negative">{{Inflection - Non-past polite - Negative}}</td></tr>
+        <tr class="infl_row"><td class="infl_type">Past</td><td class="affirmative">{{Inflection - Past - Affirmative}}</td> <td class="negative">{{Inflection - Past - Negative}}</td></tr>
+        <tr class="infl_row"><td class="infl_type">Past polite</td><td class="affirmative">{{Inflection - Past polite - Affirmative}}</td> <td class="negative">{{Inflection - Past polite - Negative}}</td></tr>
+        <tr class="infl_row"><td class="infl_type">Te-form</td><td class="affirmative">{{Inflection - Te-form - Affirmative}}</td> <td class="negative">{{Inflection - Te-form - Negative}}</td></tr>
+        <tr class="infl_row"><td class="infl_type">Potential</td><td class="affirmative">{{Inflection - Potential - Affirmative}}</td> <td class="negative">{{Inflection - Potential - Negative}}</td></tr>
+        <tr class="infl_row"><td class="infl_type">Passive</td><td class="affirmative">{{Inflection - Passive - Affirmative}}</td> <td class="negative">{{Inflection - Passive - Negative}}</td></tr>
+        <tr class="infl_row"><td class="infl_type">Causative</td><td class="affirmative">{{Inflection - Causative - Affirmative}}</td> <td class="negative">{{Inflection - Causative - Negative}}</td></tr>
+        <tr class="infl_row"><td class="infl_type">Causative Passive</td><td class="affirmative">{{Inflection - Causative Passive - Affirmative}}</td> <td class="negative">{{Inflection - Causative Passive - Negative}}</td></tr>
+        <tr class="infl_row"><td class="infl_type">Imperative</td><td class="affirmative">{{Inflection - Imperative - Affirmative}}</td> <td class="negative">{{Inflection - Imperative - Negative}}</td></tr>
+    </table>
 </div>
 <script>    
     function play_audio() {
@@ -250,6 +250,7 @@
     
     function hideLastSentences(){
         const sentences = document.querySelectorAll(".sentence_h_wrapper");
+        [...sentences].map((x) => x.querySelector(".sentence_jap").textContent == '' ? x.remove() : true)
         if (MIN_SHOW_SENTENCES < sentences.length){
             [...sentences].slice(MIN_SHOW_SENTENCES).map(x => x.style.display = 'none')
         } else {
@@ -257,6 +258,11 @@
         }
     }
     
+    function hideUselessInflections(){
+        const inflection = document.querySelectorAll(".infl_row");
+        [...inflection].map((x) => {x.querySelector(".negative").textContent == '' ? x.remove() : true})
+    }
+
     function revealMeanings(){
         const meanings = document.querySelectorAll(".m_h_wrapper");
         [...meanings].map(x => x.style.display = '')
@@ -283,7 +289,7 @@
         const goto_sent = document.getElementById("goto_sent")
         const goto_infl = document.getElementById("goto_infl")
         const has_sentences = document.querySelector(".sentence_jap").textContent != ""
-        const has_inflection = document.querySelector(".affimative").textContent != ""
+        const has_inflection = document.querySelector(".affirmative").textContent != ""
         const has_kanji = document.querySelectorAll("img").length > 0
         if (!has_inflection){
             goto_infl.style.display = "none"   
@@ -340,6 +346,7 @@
     hasAudio()
     hideLastMeanings()
     hideLastSentences()
+    hideUselessInflections()
     onlyShowRomaji()
     hideJLPT()
     gotoMeanings()
