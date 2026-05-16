@@ -1,0 +1,43 @@
+<div id="main_container_front">
+    <audio id="word_audio" src="{{Audio}}" preload="none"></audio>
+    <div>
+        <button id="expr_button" class="button" onclick="play_audio()"><span id="front_expr">{{Expression}}</span></button>
+    </div>
+    <div id="hint_container">
+        <div id="front_furigana">{{Furigana}}</div>
+        <button id="hint_button" class="button">Reveal furigana</button>
+    </div>
+</div>
+
+<script>
+    function inject() {
+        document.getElementById("front_furigana").style.display = "block";
+        document.getElementById("hint_button").style.display = "none";
+    }
+
+    function play_audio() {
+        document.getElementById("word_audio").play();
+    }
+    
+    function revealFurigana() {
+        const expr = document.getElementById("front_expr").textContent
+        const furi = document.getElementById("front_furigana").textContent
+        if (expr.match(/【[^】]+】/) === null && furi != expr){
+            const hintbutton = document.getElementById("hint_button")        
+            hintbutton.onclick = inject;
+            hintbutton.style.opacity = 100;
+        }
+    }
+    
+    function hasAudio(){
+        const audio_source = document.getElementById("word_audio").getAttribute("src")
+        if (audio_source == "%22%22"){
+            const expr_button = document.getElementById("expr_button")
+            expr_button.disabled = true;
+            expr_button.style.border = 0;
+        }
+    }
+
+    hasAudio()
+    setTimeout(revealFurigana, 3000)
+</script>

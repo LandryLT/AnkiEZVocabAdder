@@ -17,16 +17,21 @@ import os
 import re
 from typing import NamedTuple
 from collections import defaultdict
-from difflib import ndiff
+from scripts.anki.ankiConfig import AnkiConfig, DuplicateRemoveMode
 
 ResultConflict = NamedTuple("ResultConflict", [("candidate", JishoResult), ("conflicting_notes", list[Note])])
 
 class Ankifier():
     logger = logging.getLogger(__name__)
-    def __init__(self, col_path: str = None):
+    def __init__(self, anki_config: AnkiConfig):
+        self.config = anki_config
+        self.duplicate_resolve_mode = anki_config.dupl_resolve
         self.kanji_model_name = "EZAnkiAdder-Kanji"
         self.vocab_model_name = "EZAnkiAdder-Vocab"
-        self.col_path = self.findCollections() if not col_path else col_path
+        self.col_path = self.findCollections() if not anki_config.col_path else anki_config.col_path
+        self.furigana_timeout = anki_config.furigana_timeout
+        self.min_meanings = anki_config.min_meanings
+        self.min_sentences = anki_config.min_sentences
         if not Path(self.col_path).is_file():
             raise Ankifier.ColNotFound
     
@@ -36,7 +41,7 @@ class Ankifier():
             self.col.fix_integrity()
         except DBError as e:
             raise Ankifier.AnkiAlreadyOpen
-        model_gen = AnkiModelGen(self.col, self.vocab_model_name, self.kanji_model_name)
+        model_gen = AnkiModelGen(self.col, self.vocab_model_name, self.kanji_model_name, self.config)
         self.models = model_gen.findModels()
         deck_gen = AnkiDeckGen(self.col)
         self.decks = deck_gen.findDecks()
@@ -51,14 +56,26 @@ class Ankifier():
         curr_kanji = [re.sub(r'<[^>]*>', '', self.col.get_note(n)["Kanji"]) for n in self.col.find_notes(f'note:{self.kanji_model_name}')]
         return [k for k in kanjis if not k in curr_kanji]
     
-    def resolveConflictingVocab(self, new_notes: list[Note]):
+    def setDuplicateResolve(self):
+        while self.duplicate_resolve_mode == DuplicateRemoveMode.NONE:
+            clearConsole()
+            print(grey("Select duplicate resolution mode"))
+            print(bold("\t1. ") + f"Keep oldest {grey('(keeps learning data)')}")
+            print(bold("\t2. ") + f"Keep newest {grey('(updates card but deletes learning data)')}")
+            print(bold("\t3. ") + f"Select for each")
+            response = re.match(r'^[1-3]$', input(grey(": ")))
+            if response:
+                self.duplicate_resolve_mode = DuplicateRemoveMode(int(response.group()) - 1)
+
+
+    def resolveConflictingVocab(self, new_notes: list[Note]) -> list[Note]:
         new_ids = [n.id for n in new_notes]
         def group_by(indices: list[int], values: list[str]):
             groups = defaultdict(list)
             for i in indices:
                 groups[values[i]].append(i)
             return groups
-
+        self.setDuplicateResolve()
         while True:
             clearConsole()
             print(italic(grey("Resovling duplicates")))
@@ -85,7 +102,7 @@ class Ankifier():
                     for furi, inds in furigana_groups.items():
                         for i in inds:
                             if all_expr[i] == expr:
-                                all_notes[i]["Expression"] = f'<div class="expr">{expr}<span class="in_furi">【{furi}】</span></div>'
+                                all_notes[i]["Expression"] = expr+ f'<span id="in_furi">【{furi}】</span>'
                                 if not all_ids[i] in new_ids:
                                     notes_to_update.append(all_notes[i])
                     if notes_to_update:
@@ -95,7 +112,18 @@ class Ankifier():
                     # Meaning
                     meaning_groups = group_by(furi_inds, all_meanings)
                     if len(meaning_groups) > 1:
-                        self.selectMeaningDuplicate(furi_inds, new_notes, all_notes, all_compare_expr, all_expr, all_ids)
+                        if self.duplicate_resolve_mode is DuplicateRemoveMode.SELECT:
+                            self.selectMeaningDuplicate(furi_inds, new_notes, all_notes, all_compare_expr, all_expr, all_ids)
+                        elif self.duplicate_resolve_mode is DuplicateRemoveMode.OLDEST:
+                            for r in furi_inds[1:]:
+                                if all_ids[r] == 0:
+                                    new_notes.remove(all_notes[r])
+                            self.col.remove_notes([all_ids[i] for i in furi_inds[1:]])
+                        elif self.duplicate_resolve_mode is DuplicateRemoveMode.NEWEST:
+                            for r in furi_inds[:-1]:
+                                if all_ids[r] == 0:
+                                    new_notes.remove(all_notes[r])
+                            self.col.remove_notes([all_ids[i] for i in furi_inds[:-1]])
                         deleted_notes = True
                         break
                     meaning_inds = next(iter(meaning_groups.values()))
@@ -104,7 +132,18 @@ class Ankifier():
                     # Sentence
                     sentence_groups = group_by(meaning_inds, all_sentences)
                     if len(sentence_groups) > 1:
-                        self.selectSentenceDuplicate(meaning_inds, new_notes, all_notes, all_compare_expr, all_expr, all_ids)
+                        if self.duplicate_resolve_mode is DuplicateRemoveMode.SELECT:
+                            self.selectSentenceDuplicate(meaning_inds, new_notes, all_notes, all_compare_expr, all_expr, all_ids)
+                        elif self.duplicate_resolve_mode is DuplicateRemoveMode.OLDEST:
+                            for r in meaning_inds[1:]:
+                                if all_ids[r] == 0:
+                                    new_notes.remove(all_notes[r])
+                            self.col.remove_notes([all_ids[i] for i in meaning_inds[1:]])
+                        elif self.duplicate_resolve_mode is DuplicateRemoveMode.NEWEST:
+                            for r in meaning_inds[:-1]:
+                                if all_ids[r] == 0:
+                                    new_notes.remove(all_notes[r])
+                            self.col.remove_notes([all_ids[i] for i in meaning_inds[:-1]])
                         deleted_notes = True
                         break
                     sentence_inds = next(iter(sentence_groups.values()))
@@ -120,6 +159,7 @@ class Ankifier():
 
             if not deleted_notes:
                 break
+        return new_notes
 
 
     def selectMeaningDuplicate(self, dupl_ind_set: list[int], new_notes: list[Note], all_notes: list[Note], all_compare_expr: list[str], all_expr: list[str], all_ids: list[int]) -> None:

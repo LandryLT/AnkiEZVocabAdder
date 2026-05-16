@@ -30,7 +30,7 @@ class AnkiVocabNoteGen(AnkiNoteGen):
         
         def findTypeInTags(word_type: str):
             pattern = re.compile(f'(?mi)(?<=<div class="m_tag">).*\b{word_type}\b.*(?=<\/div>)')
-            return len(re.findall(pattern, note["Meaning"]))
+            return len(re.findall(pattern, note["Meanings"]))
         
         intransitive_verb_matches = findTypeInTags("intransitive")
         transitive_verb_matches = findTypeInTags("transitive")
@@ -62,10 +62,10 @@ class AnkiVocabNoteGen(AnkiNoteGen):
         jisho_rez = vocab_rez.jisho
         neocities_rez = vocab_rez.neocities
         new_note = self.col.new_note(self.models.vocab)
-        new_note["Expression"] = f'<div class="expr">{jisho_rez.expression}</div>'
-        new_note["Furigana"] = f'<div class="furigana">{jisho_rez.furigana}</div>'
-        new_note["Romaji"] = f'<div class="romaji">{jisho_rez.romaji}</div>'
-        new_note["JLPT"] = f'<div class="jlpt">{jisho_rez.JLPT}</div>'
+        new_note["Expression"] = jisho_rez.expression
+        new_note["Furigana"] = jisho_rez.furigana
+        new_note["Romaji"] = jisho_rez.romaji
+        new_note["JLPT"] = str(jisho_rez.JLPT)
         
         new_note["Kanjis"] = ""
         new_note["Meanings"] = self.setMeanings(jisho_rez.meanings)
@@ -80,8 +80,8 @@ class AnkiVocabNoteGen(AnkiNoteGen):
     def setMeanings(self, meanings: list[Meaning]) -> str:
         output = '<div class="meanings">'
         for i, m in enumerate(meanings):
-            output += f'<div class="m_tag">{m.tag}</div>'
-            output += f'<div><span class="m_ind">{i+1}.</span><span class="m_mean">{m.meaning}</span></div><br>'
+            output += f'<div class="m_h_wrapper"><div class="m_ind">{i+1}.</div>'
+            output += f'<div class="m_v_wrapper"><div class="m_tag">{m.tag}</div><div class="m_mean">{m.meaning}</div></div></div>'
         output += '</div>'
         return output
 
@@ -102,23 +102,29 @@ class AnkiVocabNoteGen(AnkiNoteGen):
                 new_note[f'Sentence {i+1} Audio'] = ""
             else:    
                 s = sentences[i]
-                new_note[f'Sentence {i+1} Japanese'] = f'<div class="jap_sentence">{s.japanese}</div>'
-                new_note[f'Sentence {i+1} English'] = f'<div class="eng_sentence">{s.english}</div>'
+                new_note[f'Sentence {i+1} Japanese'] = self.boldSearchTerm(s.japanese, s.search_term)
+                new_note[f'Sentence {i+1} English'] = s.english
                 new_note[f'Sentence {i+1} Audio'] = self.addAudio(s.soundfile)
 
         return new_note
+
+    @staticmethod
+    def boldSearchTerm(sentence:str, search_term: str):
+        for m in list(re.finditer(re.compile(search_term), sentence))[::-1]:
+            sentence = sentence[:m.start()] + '<span class="search_term">' + sentence[m.start():m.end()] + "</span>" + sentence[m.end():]
+        return sentence
 
     def setTransitivity(self, meanings: list[Meaning]) -> str:
         all_tags = [m.tag for m in meanings]
         has_transitive = any([re.match(r".*(?i:\btransitive\b).*", t) for t in all_tags])
         has_intransitive = any([re.match(r".*(?i:\bintransitive\b).*", t) for t in all_tags])
-        def div_decorate(s: str):
-            return f'<div class="transitiveness">{s}</div>'
+        # def div_decorate(s: str):
+        #     return f'<div class="transitiveness">{s}</div>'
         if has_intransitive and has_transitive:
-            return div_decorate("Transitive & Intransitive")
+            return "Transitive & Intransitive"
         elif has_transitive:
-            return div_decorate("Transitive")
+            return "Transitive"
         elif has_intransitive:
-            return div_decorate("Intransitive")
+            return "Intransitive"
         else:
             return ""

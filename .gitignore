@@ -5,3 +5,5 @@ vocab2add.txt
 *.mp3
 *.png
 caches
+index.html
+styles.css

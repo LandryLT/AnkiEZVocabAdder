@@ -2,7 +2,7 @@ import logging
 import os
 from scripts.scrappers import VocabScrapper, Scrapper
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.CRITICAL)
 from scripts.scrappers.JishoSearchResult import word_audio_folder
 from scripts.scrappers.NeocitiesScrapper import sentence_audio_folder
 from scripts.scrappers.KanjiResults import image_folder
@@ -13,6 +13,7 @@ import asyncio
 import re
 from tqdm import tqdm
 from scripts.utils.printingUtils import tqdm_bar_format
+from requests.exceptions import ConnectTimeout
 
 vocab_filepath = "./vocab2add.txt"
 scrapperConfig_filepath = "./searchConfig.txt"
@@ -50,7 +51,7 @@ async def main():
         return
     
     scrapper = VocabScrapper(max_display=config_parser.max_results_displayed)
-    ankifier = Ankifier(config_parser.anki_col_path)
+    ankifier = Ankifier(config_parser.anki_config)
 
     async with scrapper:
         # Check if you should clear cache on start
@@ -67,7 +68,7 @@ async def main():
                     clearConsole()
                     print(italic(grey(f"Generating {len(vocab_results)} new vocabulary Anki note")))
                     new_vocab_notes = [ankifier.vocab_gen.genVocabNote(r) for r in tqdm(vocab_results, bar_format=tqdm_bar_format)]
-                    ankifier.resolveConflictingVocab(new_vocab_notes)
+                    new_vocab_notes = ankifier.resolveConflictingVocab(new_vocab_notes)
                     
                     kanji_results = await scrapper.searchForKanjis(ankifier.resolveNewKanjis(scrapper.all_kanjis))
                     new_kanji_notes = [ankifier.kanji_gen.genKanjiNote(r) for r in kanji_results]
@@ -91,16 +92,27 @@ async def main():
                         config_parser.clear_vocab_on_complete = re.match(r'\b(?i:y(es)?)\b' , response)
                     if config_parser.clear_vocab_on_complete:
                         open(vocab_filepath, "w").close()
-                    
+                    clearConsole()
+                    print(grey(f"Sucessfully added {bold(str(len(new_vocab_notes)))}") + grey(f" new Vocab' notes and {bold(str(len(new_kanji_notes)))}") + grey(" new Kanji notes to Anki."))
+                    print(grey(f"勉強頑張って！また今度ね ;)"+"\n"))
+
             except Ankifier.ColNotFound:
                 clearConsole()
                 print(f"{bold('ERROR')}: No Anki collection found, please change the value of {italic(grey('anki_collection_file_path'))} in {italic('searchConfig.txt')} to your current {italic('collection.anki2')} path {grey('(ex:'+  italic('C:/Users/{...}/AppData/Roaming/Anki2/{...}/collection.anki2)') + 'for Windows')}")
-                print(grey('(see: https://docs.ankiweb.net/files.html#user-data)'))
+                print(grey('(see: https://docs.ankiweb.net/files.html#user-data)\n'))
+                input(f"Press {italic('Enter')} to exit")
                 return
             except Ankifier.AnkiAlreadyOpen:
                 clearConsole()
-                print(f"{bold('ERROR')}: Anki seems to be running, please close the Anki app and restart this program")
+                print(f"{bold('ERROR')}: Anki seems to be running, please close the Anki app and restart this program\n")
+                input(f"Press {italic('Enter')} to exit")
                 return
+            except ConnectTimeout as e:
+                clearConsole()
+                print(f"{bold('ERROR')}: There seems to be a problem with the connection")
+                input(grey(f"Press ") + italic('Enter') + grey(" to see error : "))
+                print(e)
+                input("\n" + f"Press {italic('Enter')} to exit")
         except Scrapper.Quit:
             logger.info("User exited early")
             clearConsole()

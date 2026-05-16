@@ -16,7 +16,7 @@ class AnkiNoteGen():
 
     def addAudio(self, filepath:str) -> str:
         if filepath and Path(filepath).is_file():
-            return f'[sound:{self.col.media.add_file(filepath)}]'
+            return f'{self.col.media.add_file(filepath)}'
         return ''
     
     def addImage(self, filepath:str) -> str:

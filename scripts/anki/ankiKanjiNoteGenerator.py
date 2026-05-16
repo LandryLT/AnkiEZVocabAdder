@@ -19,18 +19,18 @@ class AnkiKanjiNoteGen(AnkiNoteGen):
     def getAllKanjiImages(self, kanjis:str):
         output = {}
         for k in kanjis:
-            output[k] = self.col.get_note(self.col.find_notes(f'note:{self.models.kanji["name"]} {k}')[0])["Stroke Order Image"]
+            output[k] = self.col.get_note(self.col.find_notes(f'note:{self.models.kanji["name"]} Kanji:{k}')[0])["Stroke Order Image"]
         return output
 
     def genKanjiNote(self, kanji_rez: KanjiResult) -> Note:
         new_note = self.col.new_note(self.models.kanji)
-        new_note["Kanji"] = f'<div class="kanji">{kanji_rez.kanji}</div>'
-        new_note["Meaning"] = f'<div class="meaning">{kanji_rez.meaning}</div>'
-        new_note["OnYomi"] = f'<div class="on_yomi">{kanji_rez.on_yomi}</div>'
-        new_note["KunYomi"] = f'<div class="kun_yomi">{kanji_rez.kun_yomi}</div>'
-        new_note["JLPT"] = f'<div class="jlpt">{kanji_rez.jlpt}</div>'
-        new_note["Ranking"] = f'<div class="ranking">{kanji_rez.ranking}</div>'
-        new_note["Stroke Order Image"] = f'<div class="stroke_order">{self.addImage(kanji_rez.img_file)}</div>'
+        new_note["Kanji"] = kanji_rez.kanji
+        new_note["Meaning"] = kanji_rez.meaning
+        new_note["OnYomi"] = " - ".join(kanji_rez.on_yomi)
+        new_note["KunYomi"] = " - ".join(kanji_rez.kun_yomi)
+        new_note["JLPT"] = str(kanji_rez.jlpt)
+        new_note["Ranking"] = str(kanji_rez.ranking)
+        new_note["Stroke Order Image"] = self.addImage(kanji_rez.img_file)
 
         new_note = self.setCompounds(new_note, kanji_rez.compounds)
         return new_note

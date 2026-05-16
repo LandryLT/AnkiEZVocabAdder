@@ -2,13 +2,14 @@ from re import match
 from scripts.scrappers.JishoSelectMode import JishoSelectMode
 from scripts.scrappers.NeocitiesSelectMode import NeocitiesSelectMode
 from pathlib import Path
+from scripts.anki.ankiConfig import AnkiConfig, DuplicateRemoveMode
 
 class scrapperConfigParser():
     def __init__(self, filepath: str):
         self.autoselect_definition = JishoSelectMode()
         self.autoselect_sentence = NeocitiesSelectMode()
+        self.anki_config = AnkiConfig(None, 5, DuplicateRemoveMode.NONE, 2, 1)
         self.max_results_displayed = 20
-        self.anki_col_path = None
         self.use_cache = None
         self.clear_cache_on_complete = None
         self.clear_vocab_on_complete = None
@@ -53,13 +54,21 @@ class scrapperConfigParser():
                     case "download_sentence_audio":
                         self.autoselect_sentence.download_audio = self.parseBool(item)
                     case "anki_collection_file_path":
-                        self.anki_col_path = self.parsePath(item)
+                        self.anki_config = self.anki_config._replace(col_path=self.parsePath(item))
+                    case "deduplication_select_mode":
+                        self.anki_config = self.anki_config._replace(dupl_resolve=self.parseDeduplicationMode(item))
+                    case "show_furigna_timeout":
+                        self.anki_config = self.anki_config._replace(furigana_timeout=max(0, self.parseInt(item))*1000)
                     case "use_cache":
                         self.use_cache = self.parseBool(item)
                     case "clear_cache_on_complete":
                         self.clear_cache_on_complete = self.parseBool(item)
                     case "clear_vocab2add_complete":
                         self.clear_vocab_on_complete = self.parseBool(item)
+                    case "min_show_meanings":
+                        self.anki_config = self.anki_config._replace(min_meanings=max(1, self.parseInt(item)))
+                    case "min_show_sentences":
+                        self.anki_config = self.anki_config._replace(min_sentences=max(1, self.parseInt(item)))
 
         self.parsedParams = {
             "jisho_mode": self.autoselect_definition,
@@ -80,8 +89,16 @@ class scrapperConfigParser():
             return None
         value = value.group(0)
         return value == "YES"
-        
-        
+    
+    @staticmethod
+    def parseDeduplicationMode(value) -> DuplicateRemoveMode:
+        value = match(r'^(OLDEST|NEWEST|SELECT)$', value)
+        if not value:
+            return DuplicateRemoveMode.NONE
+        value = value.group(0)
+        return DuplicateRemoveMode(["OLDEST", "NEWEST", "SELECT"].index(value))
+
+
     @staticmethod
     def parseSentenceSelectMode(value: str) -> NeocitiesSelectMode.SelectMode:
         value = match(r'^(MANUAL|AUTO)$', value)
