@@ -42,16 +42,18 @@ async def main():
         scrapperConfig = config_parser.parsedParams
 
 
+    ankifier = Ankifier(config_parser.anki_config)
+    with ankifier:
+        pass
     # return
 
     if not vocab_list:
         clearConsole()
         print(bold("ERROR: ") + f"No words in search list, please write some search terms for the program in {italic('vocab2add.txt')}")
-        input(grey(f"Press {italic('Enter')}") + grey("key to exit..."))
+        input(grey(f"Press {italic('Enter ')}") + grey("key to exit..."))
         return
     
     scrapper = VocabScrapper(max_display=config_parser.max_results_displayed)
-    ankifier = Ankifier(config_parser.anki_config)
 
     async with scrapper:
         # Check if you should clear cache on start
@@ -91,10 +93,19 @@ async def main():
                         response = input(f"{grey('Clear vocab2add.txt ? :')}")
                         config_parser.clear_vocab_on_complete = re.match(r'\b(?i:y(es)?)\b' , response)
                     if config_parser.clear_vocab_on_complete:
-                        open(vocab_filepath, "w").close()
+                        with open(vocab_filepath, "w", encoding="utf-8") as f:
+                            f.write("\n".join(scrapper.jisho.no_results))
                     clearConsole()
-                    print(grey(f"Sucessfully added {bold(str(len(new_vocab_notes)))}") + grey(f" new Vocab' notes and {bold(str(len(new_kanji_notes)))}") + grey(" new Kanji notes to Anki."))
-                    print(grey(f"勉強頑張って！また今度ね ;)"+"\n"))
+                    if scrapper.jisho.no_results:
+                        print(grey(bold(f"Some search terms returned no results from {italic('jisho.org')}")))
+                        print(grey("[") + f"NO RESULTS: {', '.join(scrapper.jisho.no_results)}" + grey("]"))
+                        print(grey("Please check the spelling or ") + bold(grey(" jlpt_filter")) + grey(f" in {italic('searchConfig.txt')}" + "\n"))
+                    if len(new_vocab_notes) + len(new_kanji_notes):
+                        print(grey(f"Sucessfully added {bold(str(len(new_vocab_notes)))}") + grey(f" new Vocab' notes and {bold(str(len(new_kanji_notes)))}") + grey(" new Kanji notes to Anki."))
+                        print(grey(f"勉強頑張って！また今度ね ;)"+"\n"))
+                    else:
+                        print(grey(f"No new notes to Anki."))
+                        print(grey(f"またね"+"\n"))
 
             except Ankifier.ColNotFound:
                 clearConsole()

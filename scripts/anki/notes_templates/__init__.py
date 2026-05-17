@@ -14,8 +14,7 @@ kanji_expre_front_template = kanji.joinpath("expre_front.html").read_text(encodi
 kanji_styles = kanji.joinpath("styles.css").read_text(encoding="utf-8")
 
 
-vocab_resti_back_template = vocab.joinpath("resti_back.html").read_text(encoding="utf-8")
+vocab_back_template = vocab.joinpath("back.html").read_text(encoding="utf-8")
 vocab_resti_front_template = vocab.joinpath("resti_front.html").read_text(encoding="utf-8")
-vocab_expre_back_template = vocab.joinpath("expre_back.html").read_text(encoding="utf-8")
 vocab_expre_front_template = vocab.joinpath("expre_front.html").read_text(encoding="utf-8")
 vocab_styles = vocab.joinpath("styles.css").read_text(encoding="utf-8")

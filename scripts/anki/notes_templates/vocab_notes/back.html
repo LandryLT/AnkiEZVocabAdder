@@ -36,9 +36,20 @@
             <button class="goto" id="goto_infl" onclick="gotoInflections()">Inflections</button>
         </div>
     </div>
-    <div id="meaning_container">
-        {{Meanings}}
-        <button id="more_defs" onclick="revealMeanings()">Reveal all meanings</button>
+    <div id="mean_sent_container">
+        <div id="meaning_container">
+            {{Meanings}}
+            <button id="more_defs" onclick="revealMeanings()">Reveal all meanings</button>
+        </div>
+        <button id="suprise_sent" onclick="revealRandSentence()">Random sentence</button>
+        <div id="r_sentence">
+            <div id="r_sentence_h_wrapper">
+            <button id="r_sentence_audio_button">▶</button>
+            <div id="r_sentence_v_wrapper">
+                <div id="r_sentence_jap"></div>
+                <div id="r_sentence_eng"></div>
+            </div>
+        </div>
     </div>
     <div id="strokes_container">
         {{Kanjis}}
@@ -238,8 +249,9 @@
             jlpt.style.display = "none"
         }
     }
-
+    
     function hideLastMeanings(){
+        document.getElementById("more_defs").style.display = ''
         const meanings = document.querySelectorAll(".m_h_wrapper");
         if (MIN_SHOW_MEANINGS < meanings.length){
             [...meanings].slice(MIN_SHOW_MEANINGS).map(x => x.style.display = 'none')
@@ -249,8 +261,10 @@
     }
     
     function hideLastSentences(){
+        document.getElementById("more_sens").style.display = ''
+        const sentences_wrapper = document.querySelectorAll(".sentence_h_wrapper");
+        [...sentences_wrapper].map((x) => x.querySelector(".sentence_jap").textContent == '' ? x.remove() : true)
         const sentences = document.querySelectorAll(".sentence_h_wrapper");
-        [...sentences].map((x) => x.querySelector(".sentence_jap").textContent == '' ? x.remove() : true)
         if (MIN_SHOW_SENTENCES < sentences.length){
             [...sentences].slice(MIN_SHOW_SENTENCES).map(x => x.style.display = 'none')
         } else {
@@ -312,39 +326,100 @@
         }
     }
 
-    mean_container = document.getElementById("meaning_container")
-    sent_container = document.getElementById("sentence_container")
-    infl_container = document.getElementById("inflection_container")
-    strk_container = document.getElementById("strokes_container")
+    function hide_mean_container(){
+        const mean_container = document.getElementById("meaning_container")
+        mean_container.style.display = "none"
+    }
     function gotoMeanings(){
+        const mean_container = document.getElementById("meaning_container")
+        const sent_container = document.getElementById("sentence_container")
+        const infl_container = document.getElementById("inflection_container")
+        const strk_container = document.getElementById("strokes_container")
+        hideLastMeanings()
+        fillRandomSentence()
         sent_container.style.display = "none"
         infl_container.style.display = "none"
         strk_container.style.display = "none"
         mean_container.style.display = ""
     }
     function gotoSentences(){
+        const mean_container = document.getElementById("meaning_container")
+        const sent_container = document.getElementById("sentence_container")
+        const infl_container = document.getElementById("inflection_container")
+        const strk_container = document.getElementById("strokes_container")
+        hideLastSentences()
         infl_container.style.display = "none"
         mean_container.style.display = "none"
         strk_container.style.display = "none"
         sent_container.style.display = ""
+        document.getElementById("r_sentence").style.display = 'none'
+        document.getElementById("suprise_sent").style.display = 'none'
     }
     function gotoInflections(){
+        const mean_container = document.getElementById("meaning_container")
+        const sent_container = document.getElementById("sentence_container")
+        const infl_container = document.getElementById("inflection_container")
+        const strk_container = document.getElementById("strokes_container")
         sent_container.style.display = "none"
         mean_container.style.display = "none"
         strk_container.style.display = "none"
         infl_container.style.display = ""
+        document.getElementById("r_sentence").style.display = 'none'
+        document.getElementById("suprise_sent").style.display = 'none'
     }
     function gotoStrokes(){
+        const mean_container = document.getElementById("meaning_container")
+        const sent_container = document.getElementById("sentence_container")
+        const infl_container = document.getElementById("inflection_container")
+        const strk_container = document.getElementById("strokes_container")
         sent_container.style.display = "none"
         mean_container.style.display = "none"
         infl_container.style.display = "none"
         strk_container.style.display = ""
+        document.getElementById("r_sentence").style.display = 'none'
+        document.getElementById("suprise_sent").style.display = 'none'
     }
-
+    
+    function switchRandomSentence(){
+        const eng_sent = document.getElementById("r_sentence_eng")
+        const jap_sent = document.getElementById("r_sentence_jap")
+        const is_eng_visible = eng_sent.checkVisibility()
+        eng_sent.style.display = is_eng_visible ? 'none' : ''
+        jap_sent.style.display = is_eng_visible ? '' : 'none'
+    }
+    function revealRandSentence(){
+        document.getElementById("suprise_sent").style.display = 'none'
+        document.getElementById("r_sentence").style.display = ''
+    }
+    
+    function fillRandomSentence() {
+        const mean_container = document.getElementById("meaning_container")
+        const sentences = document.querySelectorAll(".sentence_h_wrapper");
+        if (sentences.length == 0){
+            document.getElementById("r_sentence").style.display = 'none'
+            document.getElementById("suprise_sent").style.display = 'none'
+            return
+        }
+        if (!mean_container.checkVisibility()){
+            document.getElementById("suprise_sent").style.display = ''
+            document.getElementById("r_sentence").style.display = 'none'
+        }
+        const jap_sent = document.getElementById("r_sentence_jap")
+        const eng_sent = document.getElementById("r_sentence_eng")
+        const random_sentence = [...sentences][Math.floor(sentences.length * Math.random())]
+        jap_sent.innerHTML = random_sentence.querySelector(".sentence_jap").innerHTML
+        eng_sent.innerHTML = random_sentence.querySelector(".sentence_eng").innerHTML
+        jap_sent.onclick = switchRandomSentence
+        eng_sent.onclick = switchRandomSentence
+        document.getElementById("r_sentence_audio_button").onclick = random_sentence.querySelector(".sentence_audio_button").onclick
+        eng_sent.style.display = 'none'
+        jap_sent.style.display = ''
+    }
+    hide_mean_container()
     assignSentenceAudio()
     revealGotos()
     hasAudio()
-    hideLastMeanings()
+    // hideLastMeanings()
     hideLastSentences()
     hideUselessInflections()
     onlyShowRomaji()

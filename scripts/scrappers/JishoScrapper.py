@@ -41,6 +41,7 @@ class JishoScrapper(Scrapper):
             
             # No results
             if not jisho_results:
+                self.no_results.append(word)
                 continue
             # Exact match and auto-select
             if not isinstance(mode, JishoSelectMode.SelectMode):
@@ -212,4 +213,5 @@ class JishoScrapper(Scrapper):
             os.remove(word_audio_folder+f)
         expression_cache.clearCache()
         meaning_cache.clearCache()
+        sound_cache.clearCache()
 

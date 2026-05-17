@@ -72,7 +72,7 @@ max_results_displayed=20
 #_Caching____________________________________________________
 
 # NONE, YES, NO #
-use_cache=NO
+use_cache=YES
 
 # NONE, YES, NO #
 clear_cache_on_complete=NO
@@ -135,7 +135,7 @@ sentence_len_distribution=EVEN
 anki_collection_file_path=C:/Users/landr/AppData/Roaming/Anki2/TEST/collection.anki2
 
 # NONE, NEWEST, OLDEST, UPDATE, SELECT #
-deduplication_select_mode=NONE
+deduplication_select_mode=UPDATE
 
 # [0-...] #
 show_furigna_timeout=5

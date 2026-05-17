@@ -3,7 +3,7 @@ from typing import NamedTuple
 from anki.models import  NotetypeDict
 import logging
 from scripts.anki.notes_templates import kanji_styles, kanji_resti_front_template, kanji_resti_back_template, kanji_expre_front_template, kanji_expre_back_template
-from scripts.anki.notes_templates import vocab_styles, vocab_resti_front_template, vocab_resti_back_template, vocab_expre_front_template, vocab_expre_back_template
+from scripts.anki.notes_templates import vocab_styles, vocab_resti_front_template, vocab_back_template, vocab_expre_front_template, vocab_back_template
 from scripts.anki.ankiConfig import AnkiConfig
 
 EZModels = NamedTuple("EZModels", [("kanji", NotetypeDict), ("vocab", NotetypeDict)])
@@ -100,9 +100,9 @@ class AnkiModelGen():
         expression_template = anki_models.new_template("Expression Card")
                 
         restitution_template["qfmt"] = vocab_resti_front_template.replace("SHOW_FURIGANA_TIMEOUT", str(self.show_furigana_timeout))
-        restitution_template["afmt"] = vocab_resti_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
+        restitution_template["afmt"] = vocab_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
         expression_template["qfmt"] = vocab_expre_front_template
-        expression_template["afmt"] = vocab_expre_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
+        expression_template["afmt"] = vocab_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
         model["css"] = vocab_styles
 
         anki_models.add_template(model, restitution_template)
@@ -125,8 +125,9 @@ class AnkiModelGen():
         resti_template = self.vocab_model["tmpls"][0]
         expre_template = self.vocab_model["tmpls"][1]
         resti_template["qfmt"] = vocab_resti_front_template.replace("SHOW_FURIGANA_TIMEOUT", str(self.show_furigana_timeout))
-        resti_template["afmt"] = vocab_resti_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
-        expre_template["qfmt"] = vocab_expre_front_template
-        expre_template["afmt"] = vocab_expre_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
+        back_templ = vocab_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
+        resti_template["afmt"] = back_templ
+        expre_template["qfmt"] = vocab_expre_front_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
+        expre_template["afmt"] = back_templ
         self.vocab_model["css"] = vocab_styles
         self.col.models.update_dict(self.vocab_model)
