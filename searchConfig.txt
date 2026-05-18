@@ -18,13 +18,12 @@
 #
 #   Expressions______
 #
-#       expression_autoselect:      Select which search results to keep.
+#       result_autoselect:          Select which search results to keep.
 #       jlpt_filter:                Filters out search results higher or equal to the given
 #                                   JLPT level. Just to be clear: JLPT 1 is higher than JLPT 5.
-#                                   (Only available if sentence_select_mode is set to AUTO) 
-#       exact_match_autoselect:     Auto-select first result if expression, furigana or romaji 
+#       exact_match_autoselect:     Auto-select first result only if expression, furigana or romaji 
 #                                   matches search term exactly. 
-#                                   (Only available if expression_autoselect is set to SELECT) 
+#                                   (Only available if result_autoselect is set to SELECT) 
 #       meaning_autoselect:         Select which meanings to keep.
 #       
 #   Audio____________
@@ -34,7 +33,6 @@
 #                                   (Only available if word_audio_download is set to YES) 
 #       download_sentence_audio:    Enables downloading audio for sentences.
 #       
-#                                   RANDOM: Randomly selects sentences
 #   Sentences________
 #       
 #       sentence_select_mode:       Enables sentence auto select.
@@ -46,6 +44,7 @@
 #       sentence_max_length:        Maximum number of characters per sentence.
 #       sentence_len_distribution:  Select how the scrappers select sentences.
 #                                   EVEN: Retrieves sentences with incrementing number of characters                              (Only available if sentence_select_mode is set to AUTO) 
+#                                   RANDOM: Randomly selects sentences
 #       
 #   Anki_____________
 #
@@ -84,28 +83,28 @@ max_results_displayed=20
 #_Caching____________________________________________________
 
 # NONE, YES, NO #
-use_cache=YES
+use_cache=NONE
 
 # NONE, YES, NO #
-clear_cache_on_complete=NO
+clear_cache_on_complete=NONE
 
 # NONE, YES, NO #
-clear_vocab2add_complete=NO
+clear_vocab2add_complete=NONE
 
 
 #_Expressions________________________________________________
 
 # NONE, [1-...], SELECT, ALL #
-expression_autoselect=3
+result_autoselect=NONE
 
 # NONE, [0-5] #
-jlpt_filter=3
+jlpt_filter=NONE
 
 # NONE, YES, NO #
 exact_match_autoselect=NONE
 
 # NONE, [1-...], SELECT, ALL #
-meaning_autoselect=5
+meaning_autoselect=NONE
 
 
 #_Audio______________________________________________________
@@ -114,40 +113,40 @@ meaning_autoselect=5
 word_audio_download=YES
 
 # NONE, YES, NO #
-word_audio_auto_download=YES
+word_audio_auto_download=NONE
 
 # NONE, YES, NO #
-download_sentence_audio=YES
+download_sentence_audio=NONE
 
 
 #_Sentences__________________________________________________
 
 # NONE, AUTO, MANUAL #
-sentence_select_mode=AUTO
+sentence_select_mode=NONE
 
 # NONE, YES, NO #
-auto_validate_random=YES
+auto_validate_random=NONE
 
 # NONE, [0-20] #
-sentence_quantity=10
+sentence_quantity=NONE
 
 # NONE, [0-...] #
-sentence_min_length=0
+sentence_min_length=NONE
 
 # NONE, [0-...] #
-sentence_max_length=999999
+sentence_max_length=NONE
 
 # NONE, EVEN, RANDOM #
-sentence_len_distribution=EVEN
+sentence_len_distribution=NONE
 
 
 #_Anki_______________________________________________________
 
 # NONE, [path to anki collection] #
-anki_collection_file_path=C:/Users/landr/AppData/Roaming/Anki2/TEST/collection.anki2
+anki_collection_file_path=NONE
 
 # NONE, NEWEST, OLDEST, UPDATE, SELECT #
-deduplication_select_mode=UPDATE
+deduplication_select_mode=NONE
 
 # [0-...], NONE #
 show_furigna_timeout=5
@@ -165,7 +164,7 @@ show_expre_read_timeout=5
 min_show_meanings=3
 
 # [1-...] #
-min_show_sentences=4
+min_show_sentences=3
 
 # [1-...] #
 min_show_compounds=2

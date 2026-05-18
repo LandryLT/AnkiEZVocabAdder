@@ -18,15 +18,17 @@ copy NUL vocab2add.txt
 call .\.venv\Scripts\activate
 pip install -r requirements.txt
 playwright install
+cls
+echo.
+echo All done...
+echo. 
+echo Please see ** searchConfig.txt ** to configurate AnkiEZ
+echo Add search terms in ** vocab2add.txt ** (one per line)
+echo Then launch ** AnkiEZVocabAdder.bat ** to get started !
+echo.
+echo Have fun, press Enter to continue
+pause
 del ..\installer.bat
-echo .
-echo "All done..."
-echo .
-echo "Please see searchConfig.txt to configurate AnkiEZ"
-echo "Add search terms in vocab2add.txt (one per line)"
-echo "Then launch AnliEZVocabAdder.bat to get started !"
-echo .
-echo "Have fun, press Enter to continue"
 goto:eof
 
 :errorNoPython

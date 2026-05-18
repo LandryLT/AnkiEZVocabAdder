@@ -27,7 +27,7 @@ class scrapperConfigParser():
                 match key:
                     case "max_results_displayed":
                         self.max_results_displayed = self.parseInt(item)
-                    case "expression_autoselect":
+                    case "result_autoselect":
                         int_attempt = self.parseInt(item)
                         self.autoselect_definition.autoselect_expression_mode = int_attempt if int_attempt != -1 else self.parseSelectMode(item)
                     case "jlpt_filter":
