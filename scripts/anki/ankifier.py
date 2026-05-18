@@ -18,7 +18,7 @@ import re
 from typing import NamedTuple
 from collections import defaultdict
 from scripts.anki.ankiConfig import AnkiConfig, DuplicateRemoveMode
-
+import asyncio
 ResultConflict = NamedTuple("ResultConflict", [("candidate", JishoResult), ("conflicting_notes", list[Note])])
 
 class Ankifier():
@@ -35,10 +35,12 @@ class Ankifier():
         if not Path(self.col_path).is_file():
             raise Ankifier.ColNotFound
     
-    def __enter__(self):
+    async def __aenter__(self):
         try:
             self.col = Collection(self.col_path)
-            self.col.fix_integrity()
+            clearConsole()
+            print(italic(grey("Checking Anki integrity...")))
+            await asyncio.to_thread(self.col.fix_integrity)
         except DBError as e:
             raise Ankifier.AnkiAlreadyOpen
         model_gen = AnkiModelGen(self.col, self.vocab_model_name, self.kanji_model_name, self.config)
@@ -49,7 +51,7 @@ class Ankifier():
         self.kanji_gen = AnkiKanjiNoteGen(self.col, self.decks, self.models)
         return self
 
-    def __exit__(self, exc_type, exc, tb):
+    async def __aexit__(self, exc_type, exc, tb):
         self.col.close()
 
     def resolveNewKanjis(self, kanjis: list[str]):

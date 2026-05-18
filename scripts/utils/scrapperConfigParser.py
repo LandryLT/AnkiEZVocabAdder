@@ -8,7 +8,7 @@ class scrapperConfigParser():
     def __init__(self, filepath: str):
         self.autoselect_definition = JishoSelectMode()
         self.autoselect_sentence = NeocitiesSelectMode()
-        self.anki_config = AnkiConfig(None, 5, DuplicateRemoveMode.NONE, 2, 1)
+        self.anki_config = AnkiConfig(None, 5, 5, 5, 5, DuplicateRemoveMode.NONE, 2, 1, 2, 3)
         self.max_results_displayed = 20
         self.use_cache = None
         self.clear_cache_on_complete = None
@@ -60,7 +60,13 @@ class scrapperConfigParser():
                     case "deduplication_select_mode":
                         self.anki_config = self.anki_config._replace(dupl_resolve=self.parseDeduplicationMode(item))
                     case "show_furigna_timeout":
-                        self.anki_config = self.anki_config._replace(furigana_timeout=max(0, self.parseInt(item))*1000)
+                        self.anki_config = self.anki_config._replace(furigana_timeout=max(-1, self.parseInt(item))*1000)
+                    case "show_sentence_timeout":
+                        self.anki_config = self.anki_config._replace(sentence_timeout=max(-1, self.parseInt(item))*1000)
+                    case "show_resti_read_timeout":
+                        self.anki_config = self.anki_config._replace(resti_readings_timeout=max(-1, self.parseInt(item))*1000)
+                    case "show_expre_read_timeout":
+                        self.anki_config = self.anki_config._replace(expr_readings_timeout=max(-1, self.parseInt(item))*1000)
                     case "use_cache":
                         self.use_cache = self.parseBool(item)
                     case "clear_cache_on_complete":
@@ -71,6 +77,10 @@ class scrapperConfigParser():
                         self.anki_config = self.anki_config._replace(min_meanings=max(1, self.parseInt(item)))
                     case "min_show_sentences":
                         self.anki_config = self.anki_config._replace(min_sentences=max(1, self.parseInt(item)))
+                    case "min_show_compounds":
+                        self.anki_config = self.anki_config._replace(min_compounds=max(1, self.parseInt(item)))
+                    case "min_show_compound_meanings":
+                        self.anki_config = self.anki_config._replace(min_compound_meanings=max(1, self.parseInt(item)))
 
         self.parsedParams = {
             "jisho_mode": self.autoselect_definition,

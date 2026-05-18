@@ -31,7 +31,7 @@
             <div id="r_sentence_h_wrapper">
             <button id="r_sentence_audio_button">▶</button>
             <div id="r_sentence_v_wrapper">
-                <div id="r_sentence_jap"></div>
+                <div id="r_sentence_jap" onclick="fillRandomSentence()"></div>
             </div>
         </div>
     </div>
@@ -204,7 +204,10 @@
         [...meanings].map(x => x.style.display = '')
         document.getElementById("more_defs").style.display = "none"
     }
-
+    function revealHintButton(){
+        document.getElementById("suprise_sent").style.opacity = 100
+        document.getElementById("suprise_sent").style.pointerEvents = "auto"
+    }
     function hideLastSentences(){
         document.getElementById("more_sens").style.display = ''
         const sentences_wrapper = document.querySelectorAll(".sentence_h_wrapper");
@@ -247,6 +250,7 @@
         document.getElementById("r_sentence_audio_button").onclick = random_sentence.querySelector(".sentence_audio_button").onclick
         jap_sent.style.display = ''
     }
+
     function gotoMeanings(){
         const mean_container = document.getElementById("front_meaning_container")
         const sent_container = document.getElementById("sentence_container")
@@ -263,4 +267,9 @@
     assignSentenceAudio()
     hideLastSentences()
     gotoMeanings()
+    if (SHOW_SENTENCE_TIMEOUT == -1000) {
+        revealRandSentence()
+    } else {
+        setTimeout(revealHintButton, SHOW_SENTENCE_TIMEOUT)
+    }
 </script>

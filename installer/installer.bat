@@ -13,6 +13,7 @@ call .\.venv\Scripts\activate
 pip install -r requirements.txt
 playwright install
 pause
-@REM mklink /h .\AnkiEZVocabAdder ..\AnkiEZVocabAdder.bat
-@REM mklink /h .\vocab_to_add.txt ..\vocab_to_add.txt
+mklink /h ..\AnkiEZVocabAdder .\AnkiEZVocabAdder.bat
+mklink /h ..\vocab_to_add.txt .\vocab_to_add.txt
+del /S .\installer\*
 del ..\installer.bat

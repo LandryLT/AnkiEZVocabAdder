@@ -2,7 +2,7 @@ from anki.storage import Collection
 from typing import NamedTuple
 from anki.models import  NotetypeDict
 import logging
-from scripts.anki.notes_templates import kanji_styles, kanji_resti_front_template, kanji_resti_back_template, kanji_expre_front_template, kanji_expre_back_template
+from scripts.anki.notes_templates import kanji_styles, kanji_resti_front_template, kanji_back_template, kanji_expre_front_template
 from scripts.anki.notes_templates import vocab_styles, vocab_resti_front_template, vocab_back_template, vocab_expre_front_template, vocab_back_template
 from scripts.anki.ankiConfig import AnkiConfig
 
@@ -15,8 +15,13 @@ class AnkiModelGen():
         self.vocab_model_name = vocab_model_name
         self.kanji_model_name = kanji_model_name
         self.show_furigana_timeout = anki_config.furigana_timeout
+        self.show_sentence_timeout = anki_config.sentence_timeout
+        self.show_resti_readings_timeout = anki_config.resti_readings_timeout
+        self.show_expr_readings_timeout = anki_config.expr_readings_timeout
         self.min_meanings = anki_config.min_meanings
         self.min_sentences = anki_config.min_sentences
+        self.max_compounds = anki_config.min_compounds
+        self.max_compound_meanings = anki_config.min_compound_meanings
 
     def findModels(self) -> EZModels:
         self.kanji_model = None
@@ -42,7 +47,8 @@ class AnkiModelGen():
             self.vocab_model = self.genVocabModel()
         else:
             self.updateVocabModel()
-        self.col.models.flush()
+        self.col.models.update(self.vocab_model)
+        self.col.models.update(self.kanji_model)
         
         return EZModels(self.kanji_model, self.vocab_model)
 
@@ -64,11 +70,11 @@ class AnkiModelGen():
         
         restitution_template = anki_models.new_template("Restitution Card")
         expression_template = anki_models.new_template("Expression Card")
-
-        restitution_template["qfmt"] = kanji_resti_front_template
-        restitution_template["afmt"] = kanji_resti_back_template
-        expression_template["qfmt"] = kanji_expre_front_template
-        expression_template["afmt"] = kanji_expre_back_template
+        back_templ = kanji_back_template.replace("MAX_SHOW_COMPOUNDS", str(self.max_compounds)).replace("MAX_SHOW_COMPOUND_MEANINGS", str(self.max_compound_meanings))
+        restitution_template["qfmt"] = kanji_resti_front_template.replace("SHOW_READING_TIMEOUT", str(self.show_resti_readings_timeout))
+        restitution_template["afmt"] = back_templ
+        expression_template["qfmt"] = kanji_expre_front_template.replace("SHOW_READING_TIMEOUT", str(self.show_expr_readings_timeout))
+        expression_template["afmt"] = back_templ
         model["css"] = kanji_styles
 
         anki_models.add_template(model, restitution_template)
@@ -98,11 +104,12 @@ class AnkiModelGen():
 
         restitution_template = anki_models.new_template("Restitution Card")
         expression_template = anki_models.new_template("Expression Card")
-                
+        back_templ = vocab_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
+        
         restitution_template["qfmt"] = vocab_resti_front_template.replace("SHOW_FURIGANA_TIMEOUT", str(self.show_furigana_timeout))
-        restitution_template["afmt"] = vocab_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
-        expression_template["qfmt"] = vocab_expre_front_template
-        expression_template["afmt"] = vocab_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
+        restitution_template["afmt"] = back_templ
+        expression_template["qfmt"] = vocab_expre_front_template.replace("SHOW_SENTENCE_TIMEOUT", str(self.show_sentence_timeout))
+        expression_template["afmt"] = back_templ
         model["css"] = vocab_styles
 
         anki_models.add_template(model, restitution_template)
@@ -114,10 +121,11 @@ class AnkiModelGen():
     def updateKanjiModel(self):
         resti_template = self.kanji_model["tmpls"][0]
         expre_template = self.kanji_model["tmpls"][1]
-        resti_template["qfmt"] = kanji_resti_front_template
-        resti_template["afmt"] = kanji_resti_back_template
-        expre_template["qfmt"] = kanji_expre_front_template
-        expre_template["afmt"] = kanji_expre_back_template
+        back_templ = kanji_back_template.replace("MAX_SHOW_COMPOUNDS", str(self.max_compounds)).replace("MAX_SHOW_COMPOUND_MEANINGS", str(self.max_compound_meanings))
+        resti_template["qfmt"] = kanji_resti_front_template.replace("SHOW_READING_TIMEOUT", str(self.show_resti_readings_timeout))
+        resti_template["afmt"] = back_templ
+        expre_template["qfmt"] = kanji_expre_front_template.replace("SHOW_READING_TIMEOUT", str(self.show_expr_readings_timeout))
+        expre_template["afmt"] = back_templ
         self.kanji_model["css"] = kanji_styles
         self.col.models.update_dict(self.kanji_model)
     
@@ -127,7 +135,7 @@ class AnkiModelGen():
         resti_template["qfmt"] = vocab_resti_front_template.replace("SHOW_FURIGANA_TIMEOUT", str(self.show_furigana_timeout))
         back_templ = vocab_back_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
         resti_template["afmt"] = back_templ
-        expre_template["qfmt"] = vocab_expre_front_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences))
+        expre_template["qfmt"] = vocab_expre_front_template.replace("MIN_SHOW_MEANINGS", str(self.min_meanings)).replace("MIN_SHOW_SENTENCES", str(self.min_sentences)).replace("SHOW_SENTENCE_TIMEOUT", str(self.show_sentence_timeout))
         expre_template["afmt"] = back_templ
         self.vocab_model["css"] = vocab_styles
         self.col.models.update_dict(self.vocab_model)

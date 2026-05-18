@@ -26,6 +26,7 @@
             const hintbutton = document.getElementById("hint_button")        
             hintbutton.onclick = inject;
             hintbutton.style.opacity = 100;
+            hintbutton.style.pointerEvents = "auto";
         }
     }
     
@@ -39,5 +40,9 @@
     }
 
     hasAudio()
-    setTimeout(revealFurigana, SHOW_FURIGANA_TIMEOUT)
+    if (SHOW_FURIGANA_TIMEOUT == -1000) {
+        inject()
+    } else {
+        setTimeout(revealFurigana, SHOW_FURIGANA_TIMEOUT)
+    }
 </script>

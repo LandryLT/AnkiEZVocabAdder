@@ -58,8 +58,20 @@
 #                                   SELECT: Select for each
 #       show_furigna_timeout:       Seconds to wait before showing furigana hint
 #                                   button in Anki vocab restitution cards.
+#                                   NONE: shows hint immediately.
+#       show_sentence_timeout:      Seconds to wait before showing sentence hint
+#                                   button in Anki vocab expression cards.
+#                                   NONE: shows hint immediately.
+#       show_resti_read_timeout:    Seconds to wait before showing reading hint
+#                                   button in Anki kanji restitution cards.
+#                                   NONE: shows hint immediately.
+#       show_expre_read_timeout:    Seconds to wait before showing reading hint
+#                                   button in Anki kanji expression cards.
+#                                   NONE: shows hint immediately.
 #       min_show_meanings:          Number of meanings to display on vocab notes.
 #       min_show_sentences:         Number of sentences to display on vocab notes.
+#       min_show_compounds:         Number of compounds to display on kanji notes.
+#       min_show_compound_meanings: Number of compound meanings to display on kanji notes.
 #
 #________________________________________________________________________________________________________
 
@@ -137,11 +149,26 @@ anki_collection_file_path=C:/Users/landr/AppData/Roaming/Anki2/TEST/collection.a
 # NONE, NEWEST, OLDEST, UPDATE, SELECT #
 deduplication_select_mode=UPDATE
 
-# [0-...] #
+# [0-...], NONE #
 show_furigna_timeout=5
+
+# [0-...], NONE #
+show_sentence_timeout=5
+
+# [0-...], NONE #
+show_resti_read_timeout=5
+
+# [0-...], NONE #
+show_expre_read_timeout=5
 
 # [1-...] #
 min_show_meanings=3
 
 # [1-...] #
 min_show_sentences=4
+
+# [1-...] #
+min_show_compounds=2
+
+# [1-...] #
+min_show_compound_meanings=3

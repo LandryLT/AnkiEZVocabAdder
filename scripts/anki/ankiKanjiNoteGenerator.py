@@ -26,10 +26,10 @@ class AnkiKanjiNoteGen(AnkiNoteGen):
         new_note = self.col.new_note(self.models.kanji)
         new_note["Kanji"] = kanji_rez.kanji
         new_note["Meaning"] = kanji_rez.meaning
-        new_note["OnYomi"] = " - ".join(kanji_rez.on_yomi)
-        new_note["KunYomi"] = " - ".join(kanji_rez.kun_yomi)
+        new_note["OnYomi"] = "、".join(kanji_rez.on_yomi)
+        new_note["KunYomi"] = "、".join(kanji_rez.kun_yomi)
         new_note["JLPT"] = str(kanji_rez.jlpt)
-        new_note["Ranking"] = str(kanji_rez.ranking)
+        new_note["Ranking"] = str(round(kanji_rez.ranking * 100, 2)) if kanji_rez.ranking != -1 else ""
         new_note["Stroke Order Image"] = self.addImage(kanji_rez.img_file)
 
         new_note = self.setCompounds(new_note, kanji_rez.compounds)

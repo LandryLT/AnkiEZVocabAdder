@@ -1,1 +1,27 @@
-{{Meaning}}
+<div id="front_meaning_yomi">
+    <div id="meanings_front">
+        {{Meaning}}
+    </div>
+    <div style="height: 5em;">
+        <div id="yomi_container_front" style="display: none;">
+            <div class="reading_row"><div class="reading_label">On:</div><div id="back_on">{{OnYomi}}</div></div>
+            <div class="reading_row"><div class="reading_label">Kun:</div><div id="back_kun">{{KunYomi}}</div></div>
+        </div>
+        <button id="reveal_readings" onclick="revealReadings()">Reveal readings</button>
+    </div>
+</div>
+<script>
+    function revealReadings(){
+        document.getElementById("yomi_container_front").style.display = ''
+        document.getElementById("reveal_readings").style.display = 'none'
+    }
+    function revealHint(){
+        document.getElementById("reveal_readings").style.opacity = 100
+        document.getElementById("reveal_readings").style.pointerEvents = "auto"
+    }
+    if (SHOW_READING_TIMEOUT == -1000){
+        revealReadings()
+    } else {
+        setTimeout(revealHint, SHOW_READING_TIMEOUT)
+    }
+</script>
