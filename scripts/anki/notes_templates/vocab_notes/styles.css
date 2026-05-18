@@ -7,6 +7,7 @@
     --odd-mean-bg: #efefef;
 	--expr-color: #000000;
     user-select: none;
+--kanji-filter: ;
 }
 
 .night_mode {
@@ -17,6 +18,11 @@
     --even-mean-bg: #272727;
     --odd-mean-bg: #171717;
 			--expr-color: #ffffff;
+--kanji-filter: brightness(1.2) contrast(1.2);
+}
+
+img {
+filter: var(--kanji-filter)
 }
 
 .search_term{
@@ -53,6 +59,10 @@ td {
 	font-size: 0.85em
 }
 
+#strokes_container {
+	padding-top: 1em;
+	padding-left: 0.5em;
+}
 
 .infl_row {
 	text-align: left
