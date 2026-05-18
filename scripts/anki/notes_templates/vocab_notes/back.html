@@ -284,7 +284,9 @@
     }
     function revealSentences(){
         const sentences = document.querySelectorAll(".sentence_h_wrapper");
-        [...sentences].map(x => x.style.display = '')
+        [...sentences].at(-1).style.borderBottomLeftRadius = "1em";
+        [...sentences].at(-1).style.borderBottomRightRadius = "1em";
+        [...sentences].map(x => x.style.display = '');
         document.getElementById("more_sens").style.display = "none"
     }
 
