@@ -1,0 +1,254 @@
+:root {
+    --button-bg: #fcfcfc;
+    --button-border: #a4a4a4;
+    --in_furi_color: #6a6a6a;
+    --m_ind_color: #4a4a4a;
+    --even-mean-bg: #f7f7f7;
+    --odd-mean-bg: #efefef;
+	--expr-color: #000000;
+	--kanji-filter: ;
+    user-select: none;
+}
+
+.night_mode {
+    --button-bg: #4f4f4f;
+    --button-border: #7a7a7a;
+    --in_furi_color: #b5b5b5;
+    --m_ind_color: #aaaaaa;		
+    --even-mean-bg: #272727;
+    --odd-mean-bg: #171717;
+    --expr-color: #ffffff;
+	--kanji-filter: brightness(1.5) contrast(1.5);
+}
+
+
+#compound_button {
+   color: var(--in_furi_color);
+    font-size: 0.85em;
+		margin: 0em;
+		margin-top: 0.5em;
+}
+.card {
+    font-family: arial;
+    font-size: 1em;
+    line-height: 1;
+    text-align: center;
+    color: black;
+    background-color: white;
+}
+
+#resti_front_main_container {
+	display:flex;
+	flex-direction: column;
+	align-items: center;
+    justify-content: center;
+    height: 90vh;
+}
+
+#resti_back_main_container, #front_meaning_yomi {
+	display: flex;
+    flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 90vh;
+
+}
+
+
+#kanji_yomi {
+    display:flex;
+	align-items: start;
+	justify-content: start;
+}
+#yomi_mean{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: space-between;
+	margin-left: -1em;
+
+	height: 9em;
+}
+#yomi_compound{
+		display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+}
+#meanings, #meanings_front {
+	margin-bottom: 1em;
+	font-weight: bold;
+	font-size: 1.5em;
+	text-align: left;
+	text-wrap: balance;
+}
+
+#meanings_front {
+ text-align: center
+}
+
+#yomi_container_back, #yomi_container_front{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+
+}
+
+
+#back_kanji_yomi {
+  display:flex;
+	align-items: center;
+	justify-content: center;
+	text-align: left;
+}
+
+.yomi {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-size: 1.5em;
+	font-weight: bold;
+	margin: 0.2em;
+	margin-top: 1.5em;
+	color: var(--in_furi_color)
+
+}
+
+
+#back_kun, #back_on {
+    display: flex;
+		align-items: start;
+	text-align: left;
+	font-size: 0.75em;
+	font-weight: bold;
+
+}
+
+#kanji_front {
+	font-size: 9em;
+margin-top: 0.2em;
+}
+
+#kanji_container {
+	min-width: 11em;
+	padding-top: 1em;
+}
+
+#kanji_back {
+    font-size: 9em;
+
+}
+
+#kanji_image {
+	width: 10.5em;
+	margin-left: -0.7em;
+	margin-top: -1em;
+ filter: var(--kanji-filter); 
+}
+
+#hint_button, .yomi, #reveal_readings {
+    opacity: 0;
+	transition: opacity 0.5s;
+	pointer-events: none;
+}
+
+.alt_font {
+    font-family:
+        "Yu Mincho",
+        "Hiragino Mincho ProN",
+        "Noto Serif JP",
+        serif;
+}
+
+.reading_label, .info_row {
+    font-size: 0.75em;
+    display: block;
+    color: var(--in_furi_color);
+    font-weight: bold;
+		min-width: 2.6em;
+		text-align: left;
+}
+
+.reading_row, .info_row {
+    display: flex;
+    align-items: start;
+	justify-content: start;
+	margin-bottom: 0.5em
+}
+#kun_compound_header, #on_compound_header{
+flex-grow: 0 1;	
+font-weight: bold;
+	color:var(--in_furi_color);
+	margin: 0.5em;
+text-align: left;
+}
+#kun_compound_container, #on_compound_container {
+	
+	flex-direction: column;
+justify-content: start;
+align-items: start;
+padding-bottom: 0em;
+	background-color: var(--odd-mean-bg);
+	border-top-left-radius: 1em;
+	border-top-right-radius: 1em;
+}
+
+
+#more_on, #more_kun {
+    color: var(--in_furi_color);
+    font-size: 0.65em;
+    flex-grow: 1 1;
+		padding: 0.5em;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+	margin: 0;
+	margin-bottom: 1em;
+}
+
+#on_compound_container .compound_row:nth-child(even), #kun_compound_container .compound_row:nth-child(even) {
+	background-color: var(--even-mean-bg);
+}
+
+#on_compound_container .compound_row:last-child td:first-child, #kun_compound_container .compound_row:last-child td:first-child{
+border-bottom-left-radius: 1em;
+}
+
+table {
+	border: none;
+}
+
+
+#on_compound_container .compound_row:last-child td:last-child, #kun_compound_container .compound_row:last-child td:last-child{
+border-bottom-right-radius: 1em;
+}
+
+
+.compound_wf {
+	white-space: nowrap;
+	padding-left: 0.5em;
+	padding-top: 0.1em;
+}
+.compound_w {
+		font-size: 1.5em;
+ font-weight: bold;
+}
+
+.compound_f {
+ color: var(--in_furi_color);
+		font-size: 0.75em
+}
+
+.compound_m {
+ color: var(--in_furi_color);
+text-align: left;
+text-wrap: balance;
+padding-left: 0.5em;
+padding-right: 0.5em;
+font-style: italic;
+}
+
+
+#compound_container {
+	display: flex;
+	flex-direction: column;
+}
