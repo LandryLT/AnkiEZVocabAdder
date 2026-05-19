@@ -1,50 +1,90 @@
 <div id="resti_front_main_container">
     <div id="kanji_yomi" style="margin-top:2em">
         <div class="yomi" id="fr_kun">{{KunYomi}}</div>
-        <div id="kanji_front" onclick="changeFont()">{{Kanji}}</div>
+        <div id="kanji_front">{{Kanji}}</div>
         <div class="yomi" id="fr_on">{{OnYomi}}</div>
 
     </div>
     <button id="hint_button">Reveal readings</button>
 </div>
 <script>
-    function inject() {
-        document.getElementById("fr_on").style.opacity = 100
-        document.getElementById("fr_kun").style.opacity = 100
-        document.getElementById("hint_button").style.opacity = 0;
-    }
-
-    function revealReadings() {
-            const hintbutton = document.getElementById("hint_button")        
-            hintbutton.onclick = inject;
-            hintbutton.style.opacity = 100;
-            hintbutton.style.pointerEvents = "auto";
-            
-    }
-
-    function changeFont(){
-        const kanji_classes = document.getElementById("kanji_front").classList
-        const on_classes = document.getElementById("fr_on").classList
-        const kun_classes = document.getElementById("fr_kun").classList
-        if (kanji_classes.contains("alt_font")){
-            kanji_classes.remove("alt_font")
-            on_classes.remove("alt_font")
-            kun_classes.remove("alt_font")
-        } else {
-            kanji_classes.add("alt_font")
-            on_classes.add("alt_font")
-            kun_classes.add("alt_font")
+    (() => {
+        if (!window.__ankiCardState) {
+            window.__ankiCardState = {
+                timer: null
+            };
         }
-    }
+        const state = window.__ankiCardState;
 
-    function shortenReadings() {
-        const yomis = [...document.querySelectorAll(".yomi")]
-        yomis.map(x => x.textContent = x.textContent?.split("、")[0])
-    }
-    shortenReadings() 
-    if (SHOW_READING_TIMEOUT == -1000){
-        inject()
-    } else {
-        setTimeout(revealReadings, SHOW_READING_TIMEOUT)
-    }
+        function inject() {
+            document.getElementById("fr_on").style.opacity = 100
+            document.getElementById("fr_kun").style.opacity = 100
+            document.getElementById("hint_button").style.opacity = 0;
+        }
+        function revealReadings() {
+                const hintbutton = document.getElementById("hint_button")        
+                hintbutton.onclick = inject;
+                hintbutton.style.opacity = 100;
+                hintbutton.style.pointerEvents = "auto";
+                revealTimer = null;        
+        }
+    
+        function changeFont(){
+            const kanji_classes = document.getElementById("kanji_front").classList
+            const on_classes = document.getElementById("fr_on").classList
+            const kun_classes = document.getElementById("fr_kun").classList
+            if (kanji_classes.contains("alt_font")){
+                kanji_classes.remove("alt_font")
+                on_classes.remove("alt_font")
+                kun_classes.remove("alt_font")
+            } else {
+                kanji_classes.add("alt_font")
+                on_classes.add("alt_font")
+                kun_classes.add("alt_font")
+            }
+        }
+    
+        function resetCard() {
+            document.getElementById("fr_on").style.opacity = "0";
+            document.getElementById("fr_kun").style.opacity = "0";
+            document.getElementById("kanji_front").onclick = null
+            document.getElementById("kanji_front").onclick = changeFont
+            const btn = document.getElementById("hint_button");
+            btn.style.opacity = "0";
+            btn.style.pointerEvents = "none";
+            btn.onclick = null;
+        }
+    
+        function shortenReadings() {
+            const yomis = [...document.querySelectorAll(".yomi")]
+            yomis.map(x => x.textContent = x.textContent?.split("、")[0])
+        }
+    
+        
+    
+        function resetTimers() {
+            if (state.timer) {
+                clearTimeout(state.timer);
+                state.timer = null;
+            }
+        }
+    
+        function startTimer() {
+            resetTimers()
+            if (SHOW_READING_TIMEOUT == -1000){
+                inject()
+                return
+            } 
+            state.timer = setTimeout(revealReadings, SHOW_READING_TIMEOUT)
+        }
+        function initCard() {
+            shortenReadings() 
+            resetCard()
+            startTimer()
+        }
+        if (!window.__ankiCardInitialized) {
+            window.__ankiCardInitialized = true;
+        }
+        setTimeout(initCard, 0);
+    })()
 </script>

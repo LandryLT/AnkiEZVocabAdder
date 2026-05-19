@@ -1,8 +1,8 @@
 <div id="resti_back_main_container">
     <div id="back_kanji_yomi">
         <div id="kanji_container" style="width: 12em; height: 10em;">
-            <div id="kanji_back" onclick="changeFont()">{{Kanji}}</div>
-            <div id="kanji_image" onclick="changeFont()">{{Stroke Order Image}}</div>
+            <div id="kanji_back">{{Kanji}}</div>
+            <div id="kanji_image">{{Stroke Order Image}}</div>
         </div>
         <div id="yomi_mean">
             <div id="meanings">
@@ -16,7 +16,7 @@
                 <div style="height: 4em; flex: 1 1;">
                     <div class="info_row" style="display: none;"><div id="jlpt_label">JLPT N</div><div id="jlpt">{{JLPT}}</div></div>
                     <div class="info_row" style="display: none;"><div id="ranking">{{Ranking}}</div><div class="info_label">% of most used kanjis</div></div>
-                    <button id="compound_button" onclick="revealMoreInfo()">More info</button>
+                    <button id="compound_button" >More info</button>
                 </div>
             </div>
         </div>
@@ -35,7 +35,7 @@
             <tr class="compound_row"><td><table  class="compound_wf"><tr><td class="compound_w">{{KunYomi Compound 9 Word}}</td></tr><tr><td class="compound_f">{{KunYomi Compound 9 Furigana}}</td></tr></table></td><td class="compound_m">{{KunYomi Compound 9 Meaning}}</td></tr>
             <tr class="compound_row"><td><table  class="compound_wf"><tr><td class="compound_w">{{KunYomi Compound 10 Word}}</td></tr><tr><td class="compound_f">{{KunYomi Compound 10 Furigana}}</td></tr></table></td><td class="compound_m">{{KunYomi Compound 10 Meaning}}</td></tr>
         </table>
-        <button id="more_kun" onclick="revealAllKun()">Load more</button>
+        <button id="more_kun">Load more</button>
         <div id="on_compound_header">On Compounds</div>
         <table id="on_compound_container" class="compound_container" cellspacing="0" cellpadding="0">            
             <tr class="compound_row"><td><table  class="compound_wf"><tr><td class="compound_w">{{OnYomi Compound 1 Word}}</td></tr><tr><td class="compound_f">{{OnYomi Compound 1 Furigana}}</td></tr></table></td><td class="compound_m">{{OnYomi Compound 1 Meaning}}</td></tr>
@@ -49,114 +49,135 @@
             <tr class="compound_row"><td><table  class="compound_wf"><tr><td class="compound_w">{{OnYomi Compound 9 Word}}</td></tr><tr><td class="compound_f">{{OnYomi Compound 9 Furigana}}</td></tr></table></td><td class="compound_m">{{OnYomi Compound 9 Meaning}}</td></tr>
             <tr class="compound_row"><td><table  class="compound_wf"><tr><td class="compound_w">{{OnYomi Compound 10 Word}}</td></tr><tr><td class="compound_f">{{OnYomi Compound 10 Furigana}}</td></tr></table></td><td class="compound_m">{{OnYomi Compound 10 Meaning}}</td></tr>
         </table>
-        <button id="more_on" onclick="revealAllOn()">Load more</button>
+        <button id="more_on">Load more</button>
     </div>
 </div>
 <script>
-    var counter = -1
-    function removeUselessDiv(){
-        const kun = document.getElementById("back_kun")
-        const on = document.getElementById("back_on")
-        if (on.textContent == ''){
-            on.parentNode.remove()
-        }
-        if (kun.textContent == ''){
-            kun.parentNode.remove()
-        }
-        const compounds = [...document.querySelectorAll(".compound_w")]
-        for (let c of compounds){
-            if (c.textContent == ''){
-                c.parentNode.parentNode.parentNode.parentNode.parentNode.remove()
+    (() => {
+
+        let counter = -1
+        function removeUselessDiv(){
+            const kun = document.getElementById("back_kun")
+            const on = document.getElementById("back_on")
+            if (on.textContent == ''){
+                on.parentNode.remove()
             }
+            if (kun.textContent == ''){
+                kun.parentNode.remove()
+            }
+            const compounds = [...document.querySelectorAll(".compound_w")]
+            for (let c of compounds){
+                if (c.textContent == ''){
+                    c.parentNode.parentNode.parentNode.parentNode.parentNode.remove()
+                }
+            }
+            const on_compounds = [...document.getElementById("on_compound_container").querySelectorAll(".compound_row")]
+            const kun_compounds = [...document.getElementById("kun_compound_container").querySelectorAll(".compound_row")]
+            const max_compounds = MAX_SHOW_COMPOUNDS
+            if (on_compounds.length <= max_compounds) {
+                document.getElementById("more_on").style.display = "none"
+                revealAllOn()
+            }
+            if (on_compounds.length == 0) {
+                document.getElementById("on_compound_container").remove()
+            }
+            if (kun_compounds.length <= max_compounds) {
+                document.getElementById("more_kun").style.display = "none"
+                revealAllKun()
+            }
+            if (kun_compounds.length == 0) {
+                document.getElementById("kun_compound_container").remove()
+            }
+            const concated_compounds = on_compounds.concat(kun_compounds)
+            const max_meanings = MAX_SHOW_COMPOUND_MEANINGS
+            for (let c of concated_compounds){
+                c.querySelector(".compound_m").textContent = c.querySelector(".compound_m").textContent.split(", ").slice(0, max_meanings).join(", ")
+            }
+            for (let c_set of [on_compounds, kun_compounds]) {
+                for (let c_ind in c_set){
+                    if (c_ind >= max_compounds){
+                        let c = c_set[c_ind]
+                        c.style.display = "none"
+                    }
+                }
+            }
+    
         }
-        const on_compounds = [...document.getElementById("on_compound_container").querySelectorAll(".compound_row")]
-        const kun_compounds = [...document.getElementById("kun_compound_container").querySelectorAll(".compound_row")]
-        const max_compounds = MAX_SHOW_COMPOUNDS
-        if (on_compounds.length <= max_compounds) {
-            document.getElementById("more_on").style.display = "none"
-            revealAllOn()
-        }
-        if (on_compounds.length == 0) {
-            document.getElementById("on_compound_container").remove()
-        }
-        if (kun_compounds.length <= max_compounds) {
+        
+        function revealAllKun(){
+            const kun = document.getElementById("kun_compound_container")
+            const kun_compounds = [...kun.querySelectorAll(".compound_row")]
+            kun_compounds.map(x => x.style.display = "")
             document.getElementById("more_kun").style.display = "none"
-            revealAllKun()
+            kun.style.borderBottomLeftRadius = "1em"
+            kun.style.borderBottomRightRadius = "1em"
         }
-        if (kun_compounds.length == 0) {
-            document.getElementById("kun_compound_container").remove()
+        function revealAllOn(){
+            const on = document.getElementById("on_compound_container")
+            const on_compounds = [...on.querySelectorAll(".compound_row")]
+            on_compounds.map(x => x.style.display = "")
+            document.getElementById("more_on").style.display = "none"
+            on.style.borderBottomLeftRadius = "1em"
+            on.style.borderBottomRightRadius = "1em"
+    
         }
-        const concated_compounds = on_compounds.concat(kun_compounds)
-        const max_meanings = MAX_SHOW_COMPOUND_MEANINGS
-        for (let c of concated_compounds){
-            c.querySelector(".compound_m").textContent = c.querySelector(".compound_m").textContent.split(", ").slice(0, max_meanings).join(", ")
+    
+        function revealMoreInfo(){
+            document.getElementById("compound_button").style.display = "none"
+            const jlpt = document.getElementById("jlpt")
+            const ranking = document.getElementById("ranking")
+            if (jlpt.textContent != "0") jlpt.parentNode.style.display = ""
+            if (ranking.textContent != "") ranking.parentNode.style.display = ""
+            const comps = document.getElementById("compound_container")        
+            comps.style.display = ""
+            const main_container = document.getElementById("resti_back_main_container")
+            main_container.style.alignItems = "center"
+            main_container.style.justifyContent = "start"
         }
-        for (let c_set of [on_compounds, kun_compounds]) {
-            for (let c_ind in c_set){
-                if (c_ind >= max_compounds){
-                    let c = c_set[c_ind]
-                    c.style.display = "none"
+    
+        function changeFont(){
+            counter = (counter + 1) % 3
+            const kanji = document.getElementById("kanji_back")
+            const kanji_image = document.getElementById("kanji_image")
+            switch (counter){
+                case 0: {
+                    kanji.classList.remove("alt_font")
+                    kanji.style.display = ""
+                    kanji_image.style.display = "none"
+                    break
+                }
+                case 1:{
+                    kanji.classList.add("alt_font")
+                    kanji.style.display = ""
+                    kanji_image.style.display = "none"
+                    break
+                }
+                case 2: {
+                    kanji.style.display = "none"
+                    kanji_image.style.display = ""
+                    break
                 }
             }
         }
-
-    }
-    
-    function revealAllKun(){
-        const kun = document.getElementById("kun_compound_container")
-        const kun_compounds = [...kun.querySelectorAll(".compound_row")]
-        kun_compounds.map(x => x.style.display = "")
-        document.getElementById("more_kun").style.display = "none"
-        kun.style.borderBottomLeftRadius = "1em"
-        kun.style.borderBottomRightRadius = "1em"
-    }
-    function revealAllOn(){
-        const on = document.getElementById("on_compound_container")
-        const on_compounds = [...on.querySelectorAll(".compound_row")]
-        on_compounds.map(x => x.style.display = "")
-        document.getElementById("more_on").style.display = "none"
-        on.style.borderBottomLeftRadius = "1em"
-        on.style.borderBottomRightRadius = "1em"
-
-    }
-
-    function revealMoreInfo(){
-        document.getElementById("compound_button").style.display = "none"
-        const jlpt = document.getElementById("jlpt")
-        const ranking = document.getElementById("ranking")
-        if (jlpt.textContent != "0") jlpt.parentNode.style.display = ""
-        if (ranking.textContent != "") ranking.parentNode.style.display = ""
-        const comps = document.getElementById("compound_container")        
-        comps.style.display = ""
-        const main_container = document.getElementById("resti_back_main_container")
-        main_container.style.alignItems = "center"
-        main_container.style.justifyContent = "start"
-    }
-
-    function changeFont(){
-        counter = (counter + 1) % 3
-        const kanji = document.getElementById("kanji_back")
-        const kanji_image = document.getElementById("kanji_image")
-        switch (counter){
-            case 0: {
-                kanji.classList.remove("alt_font")
-                kanji.style.display = ""
-                kanji_image.style.display = "none"
-                break
-            }
-            case 1:{
-                kanji.classList.add("alt_font")
-                kanji.style.display = ""
-                kanji_image.style.display = "none"
-                break
-            }
-            case 2: {
-                kanji.style.display = "none"
-                kanji_image.style.display = ""
-                break
-            }
+        function resetCard(){
+            document.getElementById("kanji_back").onclick = null
+            document.getElementById("kanji_back").onclick = changeFont
+            document.getElementById("kanji_image").onclick = null
+            document.getElementById("kanji_image").onclick = changeFont
+            document.getElementById("compound_button").onclick = null
+            document.getElementById("compound_button").onclick = revealMoreInfo
+            document.getElementById("more_kun").onclick = null
+            document.getElementById("more_kun").onclick = revealAllKun
+            document.getElementById("more_on").onclick = null
+            document.getElementById("more_on").onclick = revealAllOn
+            document.getElementById("compound_container").style.display = "none"
+            document.querySelectorAll(".info_row").forEach(x => x.style.display = "none")
         }
-    }
-    removeUselessDiv()
-    changeFont()
+        function initCard() {    
+            resetCard()
+            removeUselessDiv()
+            changeFont()
+        }
+        initCard()
+    })()
 </script>

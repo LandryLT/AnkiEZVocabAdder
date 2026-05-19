@@ -7,21 +7,58 @@
             <div class="reading_row"><div class="reading_label">On:</div><div id="back_on">{{OnYomi}}</div></div>
             <div class="reading_row"><div class="reading_label">Kun:</div><div id="back_kun">{{KunYomi}}</div></div>
         </div>
-        <button id="reveal_readings" onclick="revealReadings()">Reveal readings</button>
+        <button id="reveal_readings">Reveal readings</button>
     </div>
 </div>
 <script>
-    function revealReadings(){
-        document.getElementById("yomi_container_front").style.display = ''
-        document.getElementById("reveal_readings").style.display = 'none'
-    }
-    function revealHint(){
-        document.getElementById("reveal_readings").style.opacity = 100
-        document.getElementById("reveal_readings").style.pointerEvents = "auto"
-    }
-    if (SHOW_READING_TIMEOUT == -1000){
-        revealReadings()
-    } else {
-        setTimeout(revealHint, SHOW_READING_TIMEOUT)
-    }
+    (() => {
+        if (!window.__ankiCardState) {
+            window.__ankiCardState = {
+                timer: null
+            };
+        }
+        const state = window.__ankiCardState;
+
+        function resetCard() {
+            document.getElementById("yomi_container_front").style.display = "none";
+            const btn = document.getElementById("reveal_readings");
+            btn.style.opacity = "0";
+            btn.style.pointerEvents = "none";
+            btn.onclick = null;
+        }
+    
+        function revealReadings(){
+            document.getElementById("yomi_container_front").style.display = ''
+            document.getElementById("reveal_readings").style.display = 'none'
+        }
+        function revealHint(){
+            document.getElementById("reveal_readings").style.opacity = "1"
+            document.getElementById("reveal_readings").style.pointerEvents = "auto"
+            document.getElementById("reveal_readings").onclick = revealReadings
+    
+        }
+        
+        function resetTimers() {
+            if (state.timer) {
+                clearTimeout(state.timer);
+                state.timer = null;
+            }
+        }
+        function startTimer() {
+            resetTimers()
+            if (SHOW_READING_TIMEOUT == -1000){
+                revealReadings()
+                return
+            }
+            state.timer = setTimeout(revealHint, SHOW_READING_TIMEOUT)
+        }
+        function initCard(){
+            resetCard()
+            startTimer()
+        }
+        if (!window.__ankiCardInitialized) {
+            window.__ankiCardInitialized = true;
+        }
+        setTimeout(initCard, 0);
+    })()
 </script>

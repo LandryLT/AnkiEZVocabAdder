@@ -132,7 +132,7 @@ class JishoScrapper(Scrapper):
                                                     grey(f"\nPlease select meanings to keep"),
                                         callback=lambda i: selected_def.append(expression.meanings[i]))
                 expression_question = False
-            elif mode == JishoSelectMode.SelectMode.ALL:
+            else:
                 selected_def = expression.meanings
             
             expression.meanings = list(filter(lambda x: not x is None, selected_def))

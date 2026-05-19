@@ -79,7 +79,7 @@ class JishoSelectMode():
                         self.autoselect_expression_mode = JishoSelectMode.SelectMode.NONE
                         response = re.match(r'(?i:^y(es)?|n(o)?$)', Scrapper._checkAbortResponse(f"\n{grey('Enable auto-selecting only exact matches ?')} ({bold('y')}|{bold('n')}) {grey(':')} "))
                         if response:
-                            self.is_exact_match_autoselect = re.match(r'(?i:^y(es)?$)', response) != None
+                            self.is_exact_match_autoselect = re.match(r'(?i:^y(es)?$)', response.group(0)) != None
                             self.logger.info(f"Auto-selecting exact matches is {'en' if self.is_exact_match_autoselect else 'dis'}abled")
                             self.autoselect_expression_mode = JishoSelectMode.SelectMode.SELECT
 

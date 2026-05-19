@@ -1,7 +1,7 @@
 <div id="main_container_front">
     <audio id="word_audio" src="{{Audio}}" preload="none"></audio>
     <div>
-        <button id="front_expr_button" class="button" onclick="play_audio()"><span id="front_expr">{{Expression}}</span></button>
+        <button id="front_expr_button" class="button"><span id="front_expr">{{Expression}}</span></button>
     </div>
     <div id="hint_container">
         <div id="front_furigana">{{Furigana}}</div>
@@ -9,40 +9,81 @@
     </div>
 </div>
 
-<script>
-    function inject() {
-        document.getElementById("front_furigana").style.display = "block";
-        document.getElementById("hint_button").style.display = "none";
-    }
+<script>        
+    (() => {
+        if (!window.__ankiCardState) {
+            window.__ankiCardState = {
+                timer: null
+            };
+        }
+        const state = window.__ankiCardState;
 
-    function play_audio() {
-        document.getElementById("word_audio").play();
-    }
+        function inject() {
+            document.getElementById("front_furigana").style.display = "block";
+            document.getElementById("hint_button").style.display = "none";
+        }
     
-    function revealFurigana() {
-        const expr = document.getElementById("front_expr").textContent
-        const furi = document.getElementById("front_furigana").textContent
-        if (expr.match(/【[^】]+】/) === null && furi != expr){
+        function play_audio() {
+            document.getElementById("word_audio").play();
+        }
+        
+        function revealFurigana() {
+            const expr = document.getElementById("front_expr").textContent
+            const furi = document.getElementById("front_furigana").textContent
+            if (expr.match(/【[^】]+】/) === null && furi != expr){
+                const hintbutton = document.getElementById("hint_button")        
+                hintbutton.onclick = inject;
+                hintbutton.style.opacity = 100;
+                hintbutton.style.pointerEvents = "auto";
+            }
+        }
+        
+        function resetCard() {
+            document.getElementById("front_furigana").style.display = "none"
+            document.getElementById("front_expr_button").onclick = null
+            document.getElementById("front_expr_button").onclick = play_audio
+            
             const hintbutton = document.getElementById("hint_button")        
-            hintbutton.onclick = inject;
-            hintbutton.style.opacity = 100;
-            hintbutton.style.pointerEvents = "auto";
+            hintbutton.style.opacity = "0";
+            hintbutton.style.pointerEvents = "none";
+            hintbutton.onclick = null;
         }
-    }
     
-    function hasAudio(){
-        const audio_source = document.getElementById("word_audio").getAttribute("src")
-        if (audio_source == "%22%22"){
-            const expr_button = document.getElementById("front_expr_button")
-            expr_button.disabled = true;
-            expr_button.style.border = 0;
+    
+        function hasAudio(){
+            const audio_source = document.getElementById("word_audio").getAttribute("src")
+            if (audio_source == "%22%22"){
+                const expr_button = document.getElementById("front_expr_button")
+                expr_button.disabled = true;
+                expr_button.style.border = 0;
+            }
         }
-    }
-
-    hasAudio()
-    if (SHOW_FURIGANA_TIMEOUT == -1000) {
-        inject()
-    } else {
-        setTimeout(revealFurigana, SHOW_FURIGANA_TIMEOUT)
-    }
+    
+        
+    
+        function resetTimers() {
+            if (state.timer) {
+                clearTimeout(state.timer);
+                state.timer = null;
+            }
+        }
+    
+        function startTimer() {
+            resetTimers()
+            if (SHOW_FURIGANA_TIMEOUT == -1000) {
+                inject()
+                return
+            }
+            state.timer = setTimeout(revealFurigana, SHOW_FURIGANA_TIMEOUT)
+        }
+        function initCard() {
+            hasAudio()
+            resetCard()
+            startTimer()
+        }
+        if (!window.__ankiCardInitialized) {
+            window.__ankiCardInitialized = true;
+        }
+        setTimeout(initCard, 0);
+    })()
 </script>
