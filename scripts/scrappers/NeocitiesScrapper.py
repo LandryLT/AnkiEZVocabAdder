@@ -68,7 +68,8 @@ class NeocitiesScrapper(Scrapper):
                 self.promptForSelection(choices=choices,
                                         input_text=input_text,
                                         header=f'[{expression.search_term} - {bold(expression.expression)} ({expression.furigana})] {grey(f"({i + 1}/{len(all_expr)} sentences to set)")}\n{grey(italic(expression.meanings[0].meaning))}\n',
-                                        callback=lambda i: selected_sentences.append(neocities_rez[i]))
+                                        callback=lambda i: selected_sentences.append(neocities_rez[i]),
+                                        max_results=20)
                 expression_question = False
                 cache_result_func(expression.uuid, selected_sentences)
             else:

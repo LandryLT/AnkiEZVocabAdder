@@ -94,7 +94,7 @@ class Scrapper():
     def defErrorCallback(i):
         pass
 
-    def promptForSelection(self, choices: list[str], input_text: str, header: str, callback: Callable[[int], None], use_none: bool = True, errorCallback: Callable[[int], None] = defErrorCallback, reverse_callback_order=False):
+    def promptForSelection(self, choices: list[str], input_text: str, header: str, callback: Callable[[int], None], use_none: bool = True, errorCallback: Callable[[int], None] = defErrorCallback, reverse_callback_order=False, max_results=-1):
         start_index = 0
         num_of_choices = len(choices)
         while True:
@@ -122,9 +122,15 @@ class Scrapper():
                 if re.match(r'(?i:\bn(one)?\b)', response) and use_none:
                     output = []
                     break
-            if re.match(r'^((,| )*\b\d+\b(,| )*)+$', response):
-                output = [int(r) for r in re.findall(r'\b\d+\b', response)]
+            if re.match(r'^([ ]*\b\d+\b(,| |-)*)+$', response):
+                output = []
+                for a, b in re.findall(r'(\d+)[ ]*-[ ]*(\d+)', response):
+                    output.extend(list(range(min(int(a), int(b)), max(int(a), int(b)) + 1)))
+                response = re.sub(r'\d+[ ]*-[ ]*\d+', '',response)
+                output.extend([int(r) for r in re.findall(r'\b\d+\b', response)])
                 break
+        if max_results > 0:
+            output = output[:max_results]
         [callback(i) if i < len(choices) else errorCallback(i) for i in sorted(output, reverse=reverse_callback_order)]
         return
     
