@@ -8,8 +8,8 @@ class JishoSelectMode():
     logger = logging.getLogger(__name__)
     class SelectMode(Enum):
         NONE = -1
-        SELECT = 1
-        ALL = 2
+        SELECT = 0
+        ALL = 1
 
     def __init__(self):
         self.autoselect_expression_mode = self.SelectMode.NONE 
@@ -51,7 +51,7 @@ class JishoSelectMode():
                     response = re.match(r'^\s?(\d+)\s?$', Scrapper._checkAbortResponse(f'{grey("Maximum number of meanings to keep : ")} ({bold("1")}-...) {grey(": ")}'))
                     self.autoselect_meaning_mode = int(response.group())
                 else:
-                    self.autoselect_meaning_mode = JishoSelectMode.SelectMode(int(response.group(0))-1)
+                    self.autoselect_meaning_mode = JishoSelectMode.SelectMode(int(response.group(0))-2)
                     self.logger.info(f"Auto-selecting definition mode is {self.autoselect_meaning_mode.name}")
 
 
@@ -72,7 +72,7 @@ class JishoSelectMode():
                     response = re.match(r'^\s?(\d+)\s?$', Scrapper._checkAbortResponse(f'{grey("Maximum number of results to keep : ")} ({bold("1")}-...) {grey(": ")}'))
                     self.autoselect_expression_mode = int(response.group())
                 else:
-                    self.autoselect_expression_mode = JishoSelectMode.SelectMode(int(response.group(0))-1)
+                    self.autoselect_expression_mode = JishoSelectMode.SelectMode(int(response.group(0))-2)
                     self.logger.info(f"Auto-selecting definition mode is {self.autoselect_expression_mode.name}")
                     # Auto-select exact match
                     if self.autoselect_expression_mode == JishoSelectMode.SelectMode.SELECT:
