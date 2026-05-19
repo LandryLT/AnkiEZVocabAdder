@@ -127,6 +127,11 @@ async def main():
         print(f"{bold('ERROR')}: Anki seems to be running, please close the Anki app and restart this program\n")
         input(f"Press {italic('Enter')} to exit")
         return
+    except Exception as e:
+        clearConsole()
+        print(e)
+        input(f"Press {italic('Enter')} to exit")
+        return
                 
 if __name__ == "__main__":
     asyncio.run(main())

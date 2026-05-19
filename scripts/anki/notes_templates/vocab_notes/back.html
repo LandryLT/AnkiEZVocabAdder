@@ -41,7 +41,7 @@
             {{Meanings}}
             <button id="more_defs" onclick="revealMeanings()">Reveal all meanings</button>
         </div>
-        <button id="suprise_sent" onclick="revealRandSentence()">Random sentence</button>
+        <button id="suprise_sent_back" onclick="revealRandSentence()">Random sentence</button>
         <div id="r_sentence">
             <div id="r_sentence_h_wrapper">
             <button id="r_sentence_audio_button">▶</button>
@@ -355,7 +355,7 @@
         strk_container.style.display = "none"
         sent_container.style.display = ""
         document.getElementById("r_sentence").style.display = 'none'
-        document.getElementById("suprise_sent").style.display = 'none'
+        document.getElementById("suprise_sent_back").style.display = 'none'
     }
     function gotoInflections(){
         const mean_container = document.getElementById("meaning_container")
@@ -367,7 +367,7 @@
         strk_container.style.display = "none"
         infl_container.style.display = ""
         document.getElementById("r_sentence").style.display = 'none'
-        document.getElementById("suprise_sent").style.display = 'none'
+        document.getElementById("suprise_sent_back").style.display = 'none'
     }
     function gotoStrokes(){
         const mean_container = document.getElementById("meaning_container")
@@ -379,7 +379,7 @@
         infl_container.style.display = "none"
         strk_container.style.display = ""
         document.getElementById("r_sentence").style.display = 'none'
-        document.getElementById("suprise_sent").style.display = 'none'
+        document.getElementById("suprise_sent_back").style.display = 'none'
     }
     
     function switchRandomSentence(){
@@ -390,22 +390,30 @@
         jap_sent.style.display = is_eng_visible ? '' : 'none'
     }
     function revealRandSentence(){
-        document.getElementById("suprise_sent").style.display = 'none'
+        document.getElementById("suprise_sent_back").style.display = 'none'
         document.getElementById("r_sentence").style.display = ''
     }
     
-    function fillRandomSentence() {
+    function showSupriseSent(){        
         const mean_container = document.getElementById("meaning_container")
         const sentences = document.querySelectorAll(".sentence_h_wrapper");
         if (sentences.length == 0){
             document.getElementById("r_sentence").style.display = 'none'
-            document.getElementById("suprise_sent").style.display = 'none'
+            document.getElementById("suprise_sent_back").style.display = 'none'
             return
+        } else if (mean_container.style.display == 'none'){
+            showRandSentenceButton()
         }
-        if (!mean_container.checkVisibility()){
-            document.getElementById("suprise_sent").style.display = ''
-            document.getElementById("r_sentence").style.display = 'none'
-        }
+    }
+    
+    function showRandSentenceButton(){
+        document.getElementById("suprise_sent_back").style.display = ''
+        document.getElementById("r_sentence").style.display = 'none'
+    }
+
+    function fillRandomSentence() {
+        const sentences = document.querySelectorAll(".sentence_h_wrapper");
+        showSupriseSent()
         const jap_sent = document.getElementById("r_sentence_jap")
         const eng_sent = document.getElementById("r_sentence_eng")
         const random_sentence = [...sentences][Math.floor(sentences.length * Math.random())]
@@ -417,7 +425,6 @@
         eng_sent.style.display = 'none'
         jap_sent.style.display = ''
     }
-    hide_mean_container()
     assignSentenceAudio()
     revealGotos()
     hasAudio()
@@ -426,5 +433,7 @@
     hideUselessInflections()
     onlyShowRomaji()
     hideJLPT()
+    hide_mean_container()
+    showRandSentenceButton()
     gotoMeanings()
 </script>

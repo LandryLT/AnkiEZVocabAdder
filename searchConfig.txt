@@ -167,7 +167,7 @@ min_show_meanings=3
 min_show_sentences=3
 
 # [1-...] #
-min_show_compounds=2
+min_show_compounds=1
 
 # [1-...] #
 min_show_compound_meanings=3

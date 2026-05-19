@@ -13,7 +13,7 @@
                     <div class="reading_row"><div class="reading_label">On:</div><div id="back_on">{{OnYomi}}</div></div>
                     <div class="reading_row"><div class="reading_label">Kun:</div><div id="back_kun">{{KunYomi}}</div></div>
                 </div>
-                <div style="height: 4em;">
+                <div style="height: 4em; flex: 1 1;">
                     <div class="info_row" style="display: none;"><div id="jlpt_label">JLPT N</div><div id="jlpt">{{JLPT}}</div></div>
                     <div class="info_row" style="display: none;"><div id="ranking">{{Ranking}}</div><div class="info_label">% of most used kanjis</div></div>
                     <button id="compound_button" onclick="revealMoreInfo()">More info</button>
@@ -74,12 +74,14 @@
         const max_compounds = MAX_SHOW_COMPOUNDS
         if (on_compounds.length <= max_compounds) {
             document.getElementById("more_on").style.display = "none"
+            revealAllOn()
         }
         if (on_compounds.length == 0) {
             document.getElementById("on_compound_container").remove()
         }
         if (kun_compounds.length <= max_compounds) {
             document.getElementById("more_kun").style.display = "none"
+            revealAllKun()
         }
         if (kun_compounds.length == 0) {
             document.getElementById("kun_compound_container").remove()
@@ -105,7 +107,6 @@
         const kun_compounds = [...kun.querySelectorAll(".compound_row")]
         kun_compounds.map(x => x.style.display = "")
         document.getElementById("more_kun").style.display = "none"
-        kun.style.marginBottom = "1em"
         kun.style.borderBottomLeftRadius = "1em"
         kun.style.borderBottomRightRadius = "1em"
     }
@@ -123,12 +124,12 @@
         document.getElementById("compound_button").style.display = "none"
         const jlpt = document.getElementById("jlpt")
         const ranking = document.getElementById("ranking")
-        if (jlpt.textContent != "") jlpt.parentNode.style.display = ""
+        if (jlpt.textContent != "0") jlpt.parentNode.style.display = ""
         if (ranking.textContent != "") ranking.parentNode.style.display = ""
         const comps = document.getElementById("compound_container")        
         comps.style.display = ""
         const main_container = document.getElementById("resti_back_main_container")
-        main_container.style.alignItems = "start"
+        main_container.style.alignItems = "center"
         main_container.style.justifyContent = "start"
     }
 
