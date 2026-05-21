@@ -19,3 +19,4 @@ class AnkiConfig(NamedTuple):
     min_sentences: int
     min_compounds: int
     min_compound_meanings: int
+    max_kanjis_meanings: int

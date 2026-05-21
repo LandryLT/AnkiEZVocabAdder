@@ -70,8 +70,8 @@ async def main():
                             kanji_results = await scrapper.searchForKanjis(ankifier.resolveNewKanjis(scrapper.all_kanjis))
                             new_kanji_notes = [ankifier.kanji_gen.genKanjiNote(r) for r in kanji_results]
                             [ankifier.kanji_gen.submitNoteToKanjiDeck(n) for n in new_kanji_notes]
-                            kanjis_images = ankifier.kanji_gen.getAllKanjiImages(scrapper.all_kanjis)
-                            ankifier.vocab_gen.setKanjisStrokes(new_vocab_notes, kanjis_images)
+                            kanjis_images = ankifier.kanji_gen.getKanjiNotes(scrapper.all_kanjis)
+                            ankifier.vocab_gen.setKanjisStrokes(new_vocab_notes, kanjis_images, config_parser.anki_config.max_kanjis_meanings)
                             [ankifier.vocab_gen.submitNoteToVocabDeck(n) for n in new_vocab_notes]
                             
                             

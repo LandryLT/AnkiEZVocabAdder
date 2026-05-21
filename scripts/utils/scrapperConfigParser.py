@@ -8,7 +8,7 @@ class scrapperConfigParser():
     def __init__(self, filepath: str):
         self.autoselect_definition = JishoSelectMode()
         self.autoselect_sentence = NeocitiesSelectMode()
-        self.anki_config = AnkiConfig(None, 5, 5, 5, 5, DuplicateRemoveMode.NONE, 2, 1, 2, 3)
+        self.anki_config = AnkiConfig(None, 5, 5, 5, 5, DuplicateRemoveMode.NONE, 2, 1, 2, 3, 3)
         self.max_results_displayed = 20
         self.use_cache = None
         self.clear_cache_on_complete = None
@@ -81,6 +81,8 @@ class scrapperConfigParser():
                         self.anki_config = self.anki_config._replace(min_compounds=max(1, self.parseInt(item)))
                     case "min_show_compound_meanings":
                         self.anki_config = self.anki_config._replace(min_compound_meanings=max(1, self.parseInt(item)))
+                    case "vocab_max_kanji_meanings":
+                        self.anki_config = self.anki_config._replace(max_kanjis_meanings=max(1, self.parseInt(item)))
 
         self.parsedParams = {
             "jisho_mode": self.autoselect_definition,

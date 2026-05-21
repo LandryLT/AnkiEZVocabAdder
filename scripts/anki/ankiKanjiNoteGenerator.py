@@ -16,10 +16,10 @@ class AnkiKanjiNoteGen(AnkiNoteGen):
             return
         self.submitNoteToDeck(note, self.ordered_jlpt_decks[int(level.group(0))])
         
-    def getAllKanjiImages(self, kanjis:str):
+    def getKanjiNotes(self, kanjis:str) -> list[Note]:
         output = {}
         for k in kanjis:
-            output[k] = self.col.get_note(self.col.find_notes(f'note:{self.models.kanji["name"]} Kanji:{k}')[0])["Stroke Order Image"]
+            output[k] = self.col.get_note(self.col.find_notes(f'note:{self.models.kanji["name"]} Kanji:{k}')[0])
         return output
 
     def genKanjiNote(self, kanji_rez: KanjiResult) -> Note:

@@ -69,6 +69,7 @@
 #                                   NONE: shows hint immediately.
 #       min_show_meanings:          Number of meanings to display on vocab notes.
 #       min_show_sentences:         Number of sentences to display on vocab notes.
+#       vocab_max_kanji_meanings:   Number of kanji meanings to display on vocab notes.
 #       min_show_compounds:         Number of compounds to display on kanji notes.
 #       min_show_compound_meanings: Number of compound meanings to display on kanji notes.
 #
@@ -165,6 +166,9 @@ min_show_meanings=3
 
 # [1-...] #
 min_show_sentences=3
+
+# [1-...] #
+vocab_max_kanji_meanings=3
 
 # [1-...] #
 min_show_compounds=1

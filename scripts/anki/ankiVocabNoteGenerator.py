@@ -13,11 +13,11 @@ class AnkiVocabNoteGen(AnkiNoteGen):
         self.ordered_jlpt_decks = [v_decks.deck, v_decks.n1, v_decks.n2, v_decks.n3, v_decks.n4, v_decks.n5]
     
     @staticmethod
-    def setKanjisStrokes(notes: list[Note], kanjis_images: dict[str, str]):
+    def setKanjisStrokes(notes: list[Note], kanjis_images: dict[str, Note], max_kanjis_meanings: int = 3):
         for n in notes:
             strokes = []
             for k in re.findall(r'[一-龯]', n['Expression']):
-                strokes.append(kanjis_images[k])
+                strokes.append(f'<div class="kanjiStrokes"><div class="kanjiMeaning">{", ".join(kanjis_images[k]["Meaning"].split(", ")[:max_kanjis_meanings])}</div>{kanjis_images[k]["Stroke Order Image"]}</div>')
             n["Kanjis"] = "".join(strokes)
 
 
