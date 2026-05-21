@@ -111,6 +111,7 @@ async def main():
                                 print(grey(f"勉強頑張って！また今度ね ;)"))
                             else:
                                 print(grey(f"またね"))
+                            input(f"Press {italic('Enter')} to exit")
                             return
                         except ConnectTimeout as e:
                             clearConsole()

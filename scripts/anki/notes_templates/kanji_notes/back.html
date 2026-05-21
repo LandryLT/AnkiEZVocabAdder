@@ -80,6 +80,7 @@
             }
             if (on_compounds.length == 0) {
                 document.getElementById("on_compound_container").remove()
+                document.getElementById("on_compound_header").style.display = "none"
             }
             if (kun_compounds.length <= max_compounds) {
                 document.getElementById("more_kun").style.display = "none"
@@ -87,6 +88,7 @@
             }
             if (kun_compounds.length == 0) {
                 document.getElementById("kun_compound_container").remove()
+                document.getElementById("kun_compound_header").style.display = "none"
             }
             const concated_compounds = on_compounds.concat(kun_compounds)
             const max_meanings = MAX_SHOW_COMPOUND_MEANINGS

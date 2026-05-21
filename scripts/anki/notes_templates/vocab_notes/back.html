@@ -44,13 +44,13 @@
         <button id="suprise_sent_back">Random sentence</button>
         <div id="r_sentence">
             <div id="r_sentence_h_wrapper">
-            <button id="r_sentence_audio_button">▶</button>
-            <div id="r_sentence_v_wrapper">
-                <div id="r_sentence_jap"></div>
-                <div id="r_sentence_eng"></div>
+                <button id="r_sentence_audio_button">▶</button>
+                <div id="r_sentence_v_wrapper">
+                    <div id="r_sentence_jap"></div>
+                    <div id="r_sentence_eng"></div>
+                </div>
             </div>
         </div>
-    </div>
     <div id="strokes_container">
         {{Kanjis}}
     </div>
@@ -220,9 +220,10 @@
         function assignSentenceAudio(){
             const jap_sentences = [...document.querySelectorAll(".sentence_jap")].map(x => x.textContent)
             const audio_callbacks = [...document.querySelectorAll(".sentence_audio")].map(x => () => x.play())
-            const audio_buttons = [...document.querySelectorAll(".sentence_h_wrapper")]
-            for (i in jap_sentences){
-                if (!jap_sentences[i]) break
+            const audio_buttons = [...document.querySelectorAll(".sentence_h_wrapper:not(.ignoreJS)")]
+            for (let i = 0; i < jap_sentences.length; i++){
+                audio_buttons[i].onclick = null
+                // if (!jap_sentences[i]) break
                 audio_buttons[i].onclick = audio_callbacks[i]
             }
         }
@@ -230,7 +231,7 @@
         function switch_to_romaji() {
             const furi = document.getElementById("back_furigana")
             const roma = document.getElementById("romaji")
-            const is_furi = furi.checkVisibility();
+            const is_furi = furi.style.display != "none";
             roma.style.display = is_furi ? "" : "none"
             furi.style.display = is_furi ? "none" : ""
         }
@@ -265,8 +266,8 @@
         function hideLastSentences(){
             document.getElementById("more_sens").style.display = ''
             const sentences_wrapper = document.querySelectorAll(".sentence_h_wrapper");
-            [...sentences_wrapper].map((x) => x.querySelector(".sentence_jap").textContent == '' ? x.remove() : true)
-            const sentences = document.querySelectorAll(".sentence_h_wrapper");
+            [...sentences_wrapper].forEach((x) => {if (x.querySelector(".sentence_jap").textContent == '') { x.style.display = 'none'; x.classList.add("ignoreJS")} else {x.classList.remove("ignoreJS")}})
+            const sentences = document.querySelectorAll(".sentence_h_wrapper:not(.ignoreJS)");
             if (MIN_SHOW_SENTENCES < sentences.length){
                 [...sentences].slice(MIN_SHOW_SENTENCES).map(x => x.style.display = 'none')
             } else {
@@ -276,7 +277,13 @@
         
         function hideUselessInflections(){
             const inflection = document.querySelectorAll(".infl_row");
-            [...inflection].map((x) => {x.querySelector(".negative").textContent == '' ? x.remove() : true})
+            [...inflection].map((x) => {
+                const neg = x.querySelector(".negative");
+                if (!neg || neg.textContent.trim() === '') {
+                    x.style.display = "none";
+                    x.classList.add("ignoreJS") ;
+                } else {x.classList.remove("ignoreJS")}
+            })
         }
     
         function revealMeanings(){
@@ -285,7 +292,11 @@
             document.getElementById("more_defs").style.display = "none"
         }
         function revealSentences(){
-            const sentences = document.querySelectorAll(".sentence_h_wrapper");
+            const sentences = document.querySelectorAll(".sentence_h_wrapper:not(.ignoreJS)");
+            document.getElementById("more_sens").style.display = "none"
+            if (sentences.length === 0){
+                return
+            }
             [...sentences].at(-1).style.borderBottomLeftRadius = "1em";
             [...sentences].at(-1).style.borderBottomRightRadius = "1em";
             [...sentences].map(x => x.style.display = '');
@@ -306,8 +317,10 @@
             const goto_strk = document.getElementById("goto_strk")
             const goto_sent = document.getElementById("goto_sent")
             const goto_infl = document.getElementById("goto_infl")
-            const has_sentences = document.querySelector(".sentence_jap").textContent != ""
-            const has_inflection = document.querySelector(".affirmative").textContent != ""
+            const firstSentence = document.querySelector(".sentence_jap");
+            const has_sentences = firstSentence && firstSentence.textContent.trim() !== ""; 
+            const aff = document.querySelector(".affirmative");
+            const has_inflection = aff && aff.textContent.trim() !== "";
             const has_kanji = document.querySelectorAll("img").length > 0
             if (!has_inflection){
                 goto_infl.style.display = "none"   
@@ -387,7 +400,7 @@
         function switchRandomSentence(){
             const eng_sent = document.getElementById("r_sentence_eng")
             const jap_sent = document.getElementById("r_sentence_jap")
-            const is_eng_visible = eng_sent.checkVisibility()
+            const is_eng_visible = eng_sent.style.display != "none"
             eng_sent.style.display = is_eng_visible ? 'none' : ''
             jap_sent.style.display = is_eng_visible ? '' : 'none'
         }
@@ -398,8 +411,8 @@
         
         function showSupriseSent(){        
             const mean_container = document.getElementById("meaning_container")
-            const sentences = document.querySelectorAll(".sentence_h_wrapper");
-            if (sentences.length == 0){
+            const sentences = document.querySelectorAll(".sentence_h_wrapper:not(.ignoreJS)");
+            if (sentences.length === 0){
                 document.getElementById("r_sentence").style.display = 'none'
                 document.getElementById("suprise_sent_back").style.display = 'none'
                 return
@@ -409,13 +422,19 @@
         }
         
         function showRandSentenceButton(){
+            if (document.querySelectorAll(".sentence_h_wrapper:not(.ignoreJS)").length === 0) {
+                return
+            }
             document.getElementById("suprise_sent_back").style.display = ''
             document.getElementById("r_sentence").style.display = 'none'
         }
     
         function fillRandomSentence() {
-            const sentences = document.querySelectorAll(".sentence_h_wrapper");
+            const sentences = document.querySelectorAll(".sentence_h_wrapper:not(.ignoreJS)");
             showSupriseSent()
+            if (sentences.length === 0){
+                return
+            }
             const jap_sent = document.getElementById("r_sentence_jap")
             const eng_sent = document.getElementById("r_sentence_eng")
             const random_sentence = [...sentences][Math.floor(sentences.length * Math.random())]
