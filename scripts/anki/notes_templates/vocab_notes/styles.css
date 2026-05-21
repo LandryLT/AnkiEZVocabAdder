@@ -394,4 +394,7 @@ display: block;
 #expr_button.noAudio, #front_expr_button.noAudio{
 	background: none;
 	border: 0;
+box-shadow: none;
+-webkit-box-shadow: none;
+--moz-box-shadow: none;
 }
