@@ -299,12 +299,18 @@ tr:last-child>td:last-child {
 #romaji,
 #back_furigana,
 #front_furigana,
-#JLPT {
+#JLPT,
+.kanjiMeaning {
 	color: var(--in_furi_color);
 }
-
+.kanjiMeaning {
+	padding-right: 0.5rem;
+	font-style: italic;
+	margin-bottom: 0.5rem
+}
 #romaji,
-#back_furigana {
+#back_furigana,
+.kanjiMeaning {
 	font-size: 1rem;
 }
 
