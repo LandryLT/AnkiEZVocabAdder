@@ -30,7 +30,7 @@ class KanjiResult():
         download_file_name = f'{self.kanji}_{str(uuid.uuid1())}.png'
         download_file_path = image_folder + download_file_name
 
-        r = await asyncio.get_event_loop().run_in_executor(None, requests.get, img_url)
+        r = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(img_url, timeout=15, stream=False))
         with open(download_file_path, "wb") as file:
             for chunk in r.iter_content():
                 file.write(chunk)

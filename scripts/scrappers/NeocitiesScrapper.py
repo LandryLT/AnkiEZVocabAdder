@@ -237,7 +237,7 @@ class NeocitiesScrapper(Scrapper):
         download_file_name = f'{sentence.expression}_sentence_{str(uuid.uuid1())}.mp3'
         download_file_path = sentence_audio_folder + download_file_name
         
-        r = await asyncio.get_event_loop().run_in_executor(None, requests.get, sentence.audio_link)
+        r = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(sentence.audio_link, timeout=15, stream=False))
         with open(download_file_path, "wb") as file:
             for chunk in r.iter_content():
                 file.write(chunk)

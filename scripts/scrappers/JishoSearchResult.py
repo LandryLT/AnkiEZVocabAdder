@@ -83,7 +83,7 @@ class JishoResult():
             return None
         download_file_name = f'{self.expression}_{self.uuid}.mp3'
         download_file_path = word_audio_folder + download_file_name
-        r = await asyncio.get_event_loop().run_in_executor(None, requests.get, self.soundlink)
+        r = await asyncio.get_event_loop().run_in_executor(None, lambda: requests.get(self.soundlink, timeout=15, stream=False))
         with open(download_file_path, "wb") as file:
             for chunk in r.iter_content():
                 file.write(chunk)

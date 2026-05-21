@@ -36,13 +36,12 @@ class Ankifier():
             raise Ankifier.ColNotFound
     
     async def __aenter__(self):
+        clearConsole()
         try:
             self.col = Collection(self.col_path)
-            clearConsole()
-            print(italic(grey("Checking Anki integrity...")))
-            await asyncio.to_thread(self.col.fix_integrity)
         except DBError as e:
             raise Ankifier.AnkiAlreadyOpen
+        print(italic(grey("Warming up Anki...")))
         model_gen = AnkiModelGen(self.col, self.vocab_model_name, self.kanji_model_name, self.config)
         self.models = model_gen.findModels()
         deck_gen = AnkiDeckGen(self.col)
@@ -53,6 +52,12 @@ class Ankifier():
 
     async def __aexit__(self, exc_type, exc, tb):
         self.col.close()
+
+    async def chackAnkiIntegrity(self):
+        clearConsole()
+        print(italic(grey("Checking Anki integrity...")))
+        await asyncio.to_thread(self.col.fix_integrity)
+
 
     def resolveNewKanjis(self, kanjis: list[str]):
         curr_kanji = [re.sub(r'<[^>]*>', '', self.col.get_note(n)["Kanji"]) for n in self.col.find_notes(f'note:{self.kanji_model_name}')]
