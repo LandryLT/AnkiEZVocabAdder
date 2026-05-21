@@ -24,10 +24,10 @@
     <div id="mean_sent_container">
         <div id="front_meaning_container">
             {{Meanings}}
-            <button id="more_defs">Reveal all meanings</button>
+            <button id="more_defs" style="display: none;">Reveal all meanings</button>
         </div>
         <button id="suprise_sent">Random sentence</button>
-        <div id="r_sentence">
+        <div id="r_sentence" style="display: none;">
             <div id="r_sentence_h_wrapper">
             <button id="r_sentence_audio_button">▶</button>
             <div id="r_sentence_v_wrapper">
@@ -35,7 +35,7 @@
             </div>
         </div>
     </div>
-    <div id="sentence_container">
+    <div id="sentence_container" style="display: none;">
         <div class="sentence_h_wrapper">
             <button class="sentence_audio_button">▶</button>
             <div class="sentence_v_wrapper">
@@ -299,6 +299,7 @@
         }   
         function initCard(){
             resetCard()
+            document.querySelectorAll(".search_term").forEach(x => x.classList.remove(".search_term"))
             hide_mean_container()
             assignSentenceAudio()
             hideLastSentences()

@@ -304,11 +304,12 @@
         }
     
         function hasAudio(){
+            const expr_button = document.getElementById("expr_button")
+            expr_button.classList.remove("noAudio")
             const audio_source = document.getElementById("word_audio").getAttribute("src")
             if (audio_source == "%22%22"){
-                const expr_button = document.getElementById("expr_button")
                 expr_button.disabled = true;
-                expr_button.style.border = 0;
+                expr_button.classList.add("noAudio")
             }
         }
     

@@ -35,7 +35,7 @@ img {
 filter: var(--kanji-filter);
 }
 
-.search_term{
+#main_container_back .search_term{
 	font-weight: bold;
 }
 
@@ -389,4 +389,9 @@ box-shadow: var(--button-shadow);
 table {
 display: block;
 	width:100%
+}
+
+#expr_button.noAudio, #front_expr_button.noAudio{
+	background: none;
+	border: 0;
 }
