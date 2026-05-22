@@ -1,12 +1,13 @@
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_bar_format
 import logging
-from scripts.scrappers import NeocitiesSelectMode, JishoScrapper, NeocitiesScrapper, JishoSelectMode, JishoResult, NeocitiesResult, KanjiScrapper, KanjiResult
+from scripts.scrappers import NeocitiesSelectMode, JishoScrapper, NeocitiesScrapper, JishoSelectMode, JishoResult, NeocitiesResult, KanjiScrapper, KanjiResult, MatomeScrapper
 from playwright.async_api import async_playwright
 from typing import NamedTuple
 import random
-from tqdm.asyncio import tqdm
+from tqdm import tqdm
 from scripts.utils.utils import list_duplicates
-
+import math
+import asyncio
 VocabScraperResult = NamedTuple('VocabScraperResult', [('jisho', JishoResult), ('neocities', list[NeocitiesResult])])
 
 class VocabScrapper():
@@ -87,7 +88,11 @@ class VocabScrapper():
         clearConsole()
         print(grey(italic(f"Downloading {len(all_kanji_rez)} kanji strokes images")))
         img_download_cors = [k.downloadImage() for k in all_kanji_rez]
-        await tqdm.gather(*img_download_cors, bar_format=tqdm_bar_format)
+        with tqdm(total=len(img_download_cors),  bar_format=tqdm_bar_format) as pbar:
+            chunks = 5
+            for i in range(math.ceil(len(img_download_cors)/chunks)):
+                await asyncio.gather(*img_download_cors[i*chunks:i*chunks+chunks])
+                pbar.update(chunks)
         return all_kanji_rez
 
     async def __aenter__(self):
@@ -99,6 +104,7 @@ class VocabScrapper():
         self.jisho = JishoScrapper(self.page, self.max_rez_display)
         self.neocities = NeocitiesScrapper(self.page, self.max_rez_display)
         self.jisho_kanji = KanjiScrapper(self.page, self.max_rez_display)
+        self.matome = MatomeScrapper(self.page, self.max_rez_display)
         return self
 
     async def __aexit__(self, exc_type, exc, tb):

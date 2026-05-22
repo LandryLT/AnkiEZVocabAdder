@@ -14,6 +14,7 @@ import re
 from tqdm import tqdm
 from scripts.utils.printingUtils import tqdm_bar_format
 from requests.exceptions import ConnectTimeout
+from urllib3.exceptions import ReadTimeoutError
 
 vocab_filepath = "./vocab2add.txt"
 scrapperConfig_filepath = "./searchConfig.txt"
@@ -42,11 +43,6 @@ async def main():
         config_parser = scrapperConfigParser(scrapperConfig_filepath)
         scrapperConfig = config_parser.parsedParams
 
-    if not vocab_list:
-        clearConsole()
-        print(bold("ERROR: ") + f"No words in search list, please write some search terms for the program in {italic('vocab2add.txt')}")
-        input(grey(f"Press {italic('Enter ')}") + grey("key to exit..."))
-        return
     
     while True:
         try:
@@ -60,6 +56,8 @@ async def main():
                     if not config_parser.use_cache:
                         scrapper.clearCache()
                     try:
+                        while not vocab_list:
+                            vocab_list = await scrapper.matome.fillVocab2AddWithJLPTN()                            
                         vocab_results = await scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)
                         try:
                             clearConsole()
@@ -113,7 +111,7 @@ async def main():
                                 print(grey(f"またね"))
                             input(f"Press {italic('Enter')} to exit")
                             return
-                        except ConnectTimeout as e:
+                        except (ConnectTimeout, ReadTimeoutError, TimeoutError) as e:
                             clearConsole()
                             print(f"{bold('ERROR')}: There seems to be a problem with the connection")
                             input(grey(f"Press ") + italic('Enter') + grey(" to see error : "))
@@ -141,15 +139,15 @@ async def main():
             clearConsole()
             input(f"{bold('ERROR')}: Anki seems to be already running, please close the Anki app and press {italic('Enter')} to resume")
             continue
-        except Exception as e:
-            clearConsole()
-            if hasattr(e, 'message'):
-                print(e.message)
-            else:
-                print(e)
-            print("\n" + grey(f"Data is cached, you can pick up where you left next time"))
-            input(f"Press {italic('Enter')} to exit")
-            return
+        # except Exception as e:
+        #     clearConsole()
+        #     if hasattr(e, 'message'):
+        #         print(e.message)
+        #     else:
+        #         print(e)
+        #     print("\n" + grey(f"Data is cached, you can pick up where you left next time"))
+        #     input(f"Press {italic('Enter')} to exit")
+        #     return
                 
 if __name__ == "__main__":
     asyncio.run(main())

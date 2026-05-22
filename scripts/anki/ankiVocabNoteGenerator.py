@@ -115,7 +115,9 @@ class AnkiVocabNoteGen(AnkiNoteGen):
         return sentence
 
     def setTransitivity(self, meanings: list[Meaning]) -> str:
-        all_tags = [m.tag for m in meanings]
+        all_tags = [m.tag for m in meanings if m.tag]
+        if not all_tags:
+            return ""
         has_transitive = any([re.match(r".*(?i:\btransitive\b).*", t) for t in all_tags])
         has_intransitive = any([re.match(r".*(?i:\bintransitive\b).*", t) for t in all_tags])
         # def div_decorate(s: str):

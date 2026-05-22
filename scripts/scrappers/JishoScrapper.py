@@ -5,10 +5,12 @@ from scripts.scrappers.Scrapper import Scrapper, oopsable, cacheable
 from scripts.scrappers.JishoSelectMode import JishoSelectMode
 import re
 from typing import Callable
-from tqdm.asyncio import tqdm
+from tqdm import tqdm
 from scripts.caching.cacheSearch import SearchCache
 from typing import Any
 import os
+import math
+import asyncio
 
 expression_cache = SearchCache("./caches/jisho/exprcache")
 meaning_cache = SearchCache("./caches/jisho/meancache")
@@ -87,7 +89,12 @@ class JishoScrapper(Scrapper):
         if auto_download:
             print(grey(italic(f'Downloading {len(expr_with_links_to_download)} audio files...\n')))
             download_cors = [e.downloadSound(cache_on_append_result) for e in expr_with_links_to_download]
-            await tqdm.gather(*download_cors, bar_format=tqdm_bar_format)
+            with tqdm(total=len(download_cors),  bar_format=tqdm_bar_format) as pbar:
+                chunks = 10
+                for i in range(math.ceil(len(download_cors)/chunks)):
+                    await asyncio.gather(*download_cors[i*chunks:i*chunks+chunks])
+                    pbar.update(chunks)
+                # await tqdm.gather(*download_cors, bar_format=tqdm_bar_format)
             return selected_expr
         
         for i, expression in enumerate(expr_with_links_to_download):

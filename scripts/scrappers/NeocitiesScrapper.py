@@ -3,7 +3,7 @@ from scripts.scrappers.JishoSearchResult import JishoResult
 from scripts.scrappers.NeocitiesSelectMode import NeocitiesSelectMode
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_bar_format
 import re
-from tqdm.asyncio import tqdm
+from tqdm import tqdm
 from typing import NamedTuple
 import random
 import math
@@ -160,7 +160,14 @@ class NeocitiesScrapper(Scrapper):
             return output
         print(italic(grey(f'Downloading audio for {len(flat_sentences)} sentences from sentencesearch.neocities.org...')))
         download_cors = [self._downloadSound(s) for s in flat_sentences]
-        flat_sentences: list[NeocitiesResult] = await tqdm.gather(*download_cors, bar_format=tqdm_bar_format)
+        flat_sentences: list[NeocitiesResult] = []
+        with tqdm(total=len(download_cors),  bar_format=tqdm_bar_format) as pbar:
+            chunks = 10
+            for i in range(math.ceil(len(download_cors)/chunks)):
+                flat_sentences.extend(await asyncio.gather(*download_cors[i*chunks:i*chunks+chunks]))
+                pbar.update(chunks)
+        
+        # await tqdm.gather(*download_cors, bar_format=tqdm_bar_format)
         for sen in flat_sentences:
             output[sen.jisho_uuid].append(sen)
         return output
