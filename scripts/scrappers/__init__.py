@@ -7,4 +7,5 @@ from .NeocitiesSelectMode import NeocitiesSelectMode
 from .KanjiScrapper import KanjiScrapper, kanji_img_cache, kanji_page_cache
 from .KanjiResults import KanjiResult
 from .MatomeScrapper import MatomeScrapper
+from .JishoJLPTScrapper import JishoJLPTScrapper
 from .VocabScrapper import VocabScrapper

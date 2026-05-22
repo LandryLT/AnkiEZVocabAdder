@@ -53,11 +53,11 @@ class Ankifier():
     async def __aexit__(self, exc_type, exc, tb):
         self.col.close()
 
-    async def chackAnkiIntegrity(self):
+    async def checkAnkiIntegrity(self):
         clearConsole()
         print(italic(grey("Checking Anki integrity...")))
         await asyncio.to_thread(self.col.fix_integrity)
-
+        print("Integrity check complete")
 
     def resolveNewKanjis(self, kanjis: list[str]):
         curr_kanji = [re.sub(r'<[^>]*>', '', self.col.get_note(n)["Kanji"]) for n in self.col.find_notes(f'note:{self.kanji_model_name}')]
@@ -81,7 +81,8 @@ class Ankifier():
         for field_name in newest_note.keys():
             if field_name in oldest_note and field_name != "Kanjis":
                 oldest_note[field_name] = newest_note[field_name]
-        self.col.update_note(oldest_note)
+        if not oldest_note in new_notes:
+            self.col.update_note(oldest_note)
         self.keepOldest(all_notes, all_ids, new_notes, indices)
 
     def keepOldest(self, all_notes: list[Note], all_ids: list[int], new_notes: list[Note],  indices: list[int]):
@@ -242,7 +243,7 @@ class Ankifier():
                 new_notes.remove(all_notes[r])
         self.col.remove_notes([all_ids[i] for i in remaining])
             
-    def findCollections(self, config_file: str = './searchConfig.txt') -> Path:
+    def findCollections(self, config_files: list[str] = ['./searchConfig.txt', './scripts/scrappers/JLPTsearchConfig.txt']) -> Path:
         clearConsole()
         supposed_collection_folder = Path(*Path('.').absolute().parts[0:3] + ("AppData/Roaming/Anki2",))
         if not os.path.isdir(supposed_collection_folder):
@@ -255,7 +256,7 @@ class Ankifier():
 
         if len(data_bases.keys()) == 1:
             output = list(data_bases.values())[0]
-            self.writeColPathInConfigFile(output, config_file)
+            self.writeColPathInConfigFile(output, config_files)
             return output
         
         print(grey("Please select a Anki collection :"))
@@ -266,7 +267,8 @@ class Ankifier():
             response = re.match(r'\d+', input(grey(": ")))
             if response and int(response.group(0)) < len(data_bases.keys()):
                 output = list(data_bases.values())[int(response.group(0))]
-                self.writeColPathInConfigFile(output, config_file)
+                for file in config_files:
+                    self.writeColPathInConfigFile(output, file)
                 return output
         
     @staticmethod

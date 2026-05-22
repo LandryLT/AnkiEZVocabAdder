@@ -1,6 +1,6 @@
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_bar_format
 import logging
-from scripts.scrappers import NeocitiesSelectMode, JishoScrapper, NeocitiesScrapper, JishoSelectMode, JishoResult, NeocitiesResult, KanjiScrapper, KanjiResult, MatomeScrapper
+from scripts.scrappers import NeocitiesSelectMode, JishoScrapper, NeocitiesScrapper, JishoSelectMode, JishoResult, NeocitiesResult, KanjiScrapper, KanjiResult, JishoJLPTScrapper
 from playwright.async_api import async_playwright
 from typing import NamedTuple
 import random
@@ -8,6 +8,7 @@ from tqdm import tqdm
 from scripts.utils.utils import list_duplicates
 import math
 import asyncio
+import re
 VocabScraperResult = NamedTuple('VocabScraperResult', [('jisho', JishoResult), ('neocities', list[NeocitiesResult])])
 
 class VocabScrapper():
@@ -37,7 +38,7 @@ class VocabScrapper():
         jisho_mode.setAutoselectMeaningMode()
         selected_expr = await self.jisho.selectMeanings(selected_expr, jisho_mode.autoselect_meaning_mode)
         [expr.setUsuallyWrittenInKana() for expr in selected_expr]
-        [[self.all_kanjis.append(k) for k in expr.kanjis] for expr in selected_expr]
+        [[self.all_kanjis.append(k) for k in expr.kanjis if re.match(r'[一-龯]' , k)] for expr in selected_expr]
         self.all_kanjis = list(set(self.all_kanjis))
 
         # Look for sentences
@@ -88,7 +89,7 @@ class VocabScrapper():
         clearConsole()
         print(grey(italic(f"Downloading {len(all_kanji_rez)} kanji strokes images")))
         img_download_cors = [k.downloadImage() for k in all_kanji_rez]
-        with tqdm(total=len(img_download_cors),  bar_format=tqdm_bar_format) as pbar:
+        with tqdm(total=len(img_download_cors),  bar_format=tqdm_bar_format+grey(' [{n_fmt}/{total_fmt}]')) as pbar:
             chunks = 5
             for i in range(math.ceil(len(img_download_cors)/chunks)):
                 await asyncio.gather(*img_download_cors[i*chunks:i*chunks+chunks])
@@ -104,7 +105,7 @@ class VocabScrapper():
         self.jisho = JishoScrapper(self.page, self.max_rez_display)
         self.neocities = NeocitiesScrapper(self.page, self.max_rez_display)
         self.jisho_kanji = KanjiScrapper(self.page, self.max_rez_display)
-        self.matome = MatomeScrapper(self.page, self.max_rez_display)
+        self.jisho_jlpt = JishoJLPTScrapper(self.page, self.max_rez_display)
         return self
 
     async def __aexit__(self, exc_type, exc, tb):

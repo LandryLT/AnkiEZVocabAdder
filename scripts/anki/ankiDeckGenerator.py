@@ -49,16 +49,16 @@ class AnkiDeckGen():
         for i in range(5):
             curr_branch = '::'.join(split_path[:3+i])
             jlpt_d = self.col.decks.by_name(curr_branch)
-            verb_branch = curr_branch + "::Verbs"
+            verb_branch = curr_branch + "::By_Type::Verbs"
             verb_d = VocabVerb(self.col.decks.by_name(verb_branch),
                                self.col.decks.by_name(verb_branch+"::Transitive"),
                                self.col.decks.by_name(verb_branch+"::Intransitive"),)
-            adj_branch = curr_branch + "::Adjectives"
+            adj_branch = curr_branch + "::By_Type::Adjectives"
             adj_d = VocabAdj(self.col.decks.by_name(adj_branch),
                              self.col.decks.by_name(adj_branch+"::I-Adjective"),
                              self.col.decks.by_name(adj_branch+"::Na-Adjective"),)
-            noun_d = self.col.decks.by_name(curr_branch+"::Nouns")
-            expr_d = self.col.decks.by_name(curr_branch+"::Expressions")
+            noun_d = self.col.decks.by_name(curr_branch+"::By_Type::Nouns")
+            expr_d = self.col.decks.by_name(curr_branch+"::By_Type::Expressions")
             jlpt_decks.append(VocabJLPTDeck(jlpt_d, verb_d, adj_d, noun_d, expr_d))
             
         return VocabDecks(kanji_deck, *jlpt_decks)
@@ -82,16 +82,18 @@ class AnkiDeckGen():
     def _deckTreeBuilder() -> dict:
         jlpts = { "_JLPT N1_": { "_JLPT N2_": { "_JLPT N3_": { "_JLPT N4_": { "_JLPT N5_": {}}}}}}
         word_types = {
-            "Verbs": {
-                "Transitive":{},
-                "Intransitive":{},
-            },
-            "Adjectives":{
-                "I-Adjective":{},
-                "Na-Adjective":{}
-            },
-            "Nouns":{},
-            "Expressions":{},
+            "By_Type": {
+                "Verbs": {
+                    "Transitive":{},
+                    "Intransitive":{},
+                },
+                "Adjectives":{
+                    "I-Adjective":{},
+                    "Na-Adjective":{}
+                },
+                "Nouns":{},
+                "Expressions":{},
+            }
         }
         deck_tree = {
             "EZAnki":{

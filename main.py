@@ -15,9 +15,15 @@ from tqdm import tqdm
 from scripts.utils.printingUtils import tqdm_bar_format
 from requests.exceptions import ConnectTimeout
 from urllib3.exceptions import ReadTimeoutError
+from anki.errors import NotFoundError
 
 vocab_filepath = "./vocab2add.txt"
 scrapperConfig_filepath = "./searchConfig.txt"
+JLPTscrapperConfig_filepath = "./scripts/scrappers/JLPTsearchConfig.txt"
+
+class JLPTSearch(Exception):
+    def __init__(self, *args):
+        super().__init__(*args)
 
 async def main():
     asyncio.get_event_loop().set_debug(False)
@@ -41,10 +47,10 @@ async def main():
         return
     else:
         config_parser = scrapperConfigParser(scrapperConfig_filepath)
-        scrapperConfig = config_parser.parsedParams
 
     
     while True:
+        scrapperConfig = config_parser.parsedParams
         try:
             async with Ankifier(config_parser.anki_config) as ankifier:
                 async with VocabScrapper(max_display=config_parser.max_results_displayed) as scrapper:
@@ -57,20 +63,32 @@ async def main():
                         scrapper.clearCache()
                     try:
                         while not vocab_list:
-                            vocab_list = await scrapper.matome.fillVocab2AddWithJLPTN()                            
+                            vocab_list = await scrapper.jisho_jlpt.fillVocab2AddWithJLPTN()
+                            jlpt_auto_config = re.match(r'^\b(?i:y(es)?\b)$', input(grey("Use auto-config for downloading whole JLPT deck ? [") + bold("y") + grey("(es)|") + bold("n") + grey("(o)]: "))) != None
+                            if jlpt_auto_config:
+                                config_parser = scrapperConfigParser(JLPTscrapperConfig_filepath)
+                            with open(vocab_filepath, "w", encoding="utf-8") as f:
+                                f.write("\n".join(vocab_list))
+                            raise JLPTSearch
                         vocab_results = await scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)
                         try:
-                            clearConsole()
-                            print(italic(grey(f"Generating {len(vocab_results)} new vocabulary Anki note")))
-                            new_vocab_notes = [ankifier.vocab_gen.genVocabNote(r) for r in tqdm(vocab_results, bar_format=tqdm_bar_format)]
-                            new_vocab_notes = ankifier.resolveConflictingVocab(new_vocab_notes)
-                            
-                            kanji_results = await scrapper.searchForKanjis(ankifier.resolveNewKanjis(scrapper.all_kanjis))
-                            new_kanji_notes = [ankifier.kanji_gen.genKanjiNote(r) for r in kanji_results]
-                            [ankifier.kanji_gen.submitNoteToKanjiDeck(n) for n in new_kanji_notes]
-                            kanjis_images = ankifier.kanji_gen.getKanjiNotes(scrapper.all_kanjis)
-                            ankifier.vocab_gen.setKanjisStrokes(new_vocab_notes, kanjis_images, config_parser.anki_config.max_kanjis_meanings)
-                            [ankifier.vocab_gen.submitNoteToVocabDeck(n) for n in new_vocab_notes]
+                            while True:
+                                try:
+                                    clearConsole()
+                                    print(italic(grey(f"Generating {len(vocab_results)} new vocabulary Anki note")))
+                                    new_vocab_notes = [ankifier.vocab_gen.genVocabNote(r) for r in tqdm(vocab_results, bar_format=tqdm_bar_format)]
+                                    resolved_new_vocab_notes = ankifier.resolveConflictingVocab(new_vocab_notes)
+                                    kanji_results = await scrapper.searchForKanjis(ankifier.resolveNewKanjis(scrapper.all_kanjis))
+                                    new_kanji_notes = [ankifier.kanji_gen.genKanjiNote(r) for r in kanji_results]
+                                    [ankifier.kanji_gen.submitNoteToKanjiDeck(n) for n in new_kanji_notes]
+                                    kanjis_images = ankifier.kanji_gen.getKanjiNotes(scrapper.all_kanjis)
+                                    ankifier.vocab_gen.setKanjisStrokes(resolved_new_vocab_notes, kanjis_images, config_parser.anki_config.max_kanjis_meanings)
+                                    [ankifier.vocab_gen.submitNoteToVocabDeck(n) for n in resolved_new_vocab_notes]
+                                    break
+                                except NotFoundError as e:
+                                    await ankifier.checkAnkiIntegrity()
+                                    raise e
+                                    continue
                             
                             
                             # Clear cache
@@ -89,16 +107,16 @@ async def main():
                                 with open(vocab_filepath, "w", encoding="utf-8") as f:
                                     f.write("\n".join(scrapper.jisho.no_results))
                             clearConsole()
-                            has_new_notes = len(new_vocab_notes) + len(new_kanji_notes) > 0
+                            has_new_notes = len(resolved_new_vocab_notes) + len(new_kanji_notes) > 0
                             if has_new_notes:
-                                if new_vocab_notes:
+                                if resolved_new_vocab_notes:
                                     print(bold(grey("[NEW VOCAB NOTES]: ")))
-                                    for i, n in enumerate(new_vocab_notes):
+                                    for i, n in enumerate(resolved_new_vocab_notes):
                                         print("\t" + f"{i+1}. {bold(re.sub(r'<[^<]*>', '', n['Expression']))}:" + "\t" + re.findall(r'<div class="m_mean">([^<]*)<\/div>', n['Meanings'])[0])
                                     print("")
                                 if new_kanji_notes:
                                     print(bold(grey("[NEW KANJI NOTES]: ")) + ", ".join([bold(k["Kanji"]) for k in new_kanji_notes]) + "\n")
-                                print(grey(f"Sucessfully added {bold(str(len(new_vocab_notes)))}") + grey(f" new Vocab' notes and {bold(str(len(new_kanji_notes)))}") + grey(" new Kanji notes to Anki.\n"))
+                                print(grey(f"Sucessfully added {bold(str(len(resolved_new_vocab_notes)))}") + grey(f" new Vocab' notes and {bold(str(len(new_kanji_notes)))}") + grey(" new Kanji notes to Anki.\n"))
                             else:
                                 print(grey("No new notes added to Anki.\n"))
                             if scrapper.jisho.no_results:
@@ -127,6 +145,8 @@ async def main():
                             scrapper.clearCache()
                             return
                         print(grey(f"Data is cached, you can pick up where you left next time"))
+                    except JLPTSearch:
+                        continue
                     input("\n" + f"Press {italic('Enter')} to exit")
                     return
         except Ankifier.ColNotFound:

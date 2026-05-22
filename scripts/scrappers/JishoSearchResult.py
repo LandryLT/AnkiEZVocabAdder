@@ -27,7 +27,7 @@ class JishoResult():
         self.search_term = search_term
         self.uuid = str(uuid.uuid1())
         self.expression = raw.expression
-        self.kanjis = re.findall(r'[一-龯]', self.expression)
+        self.kanjis = re.findall(r'[^ぁ-んァ-ン]', self.expression)
         self.furigana = parseFurigana(raw.expression, self.kanjis, raw.furiganas)
         self.romaji = convertToRomaji(self.furigana)
         self.is_exact_match = self.search_term in (self.expression, self.furigana, self.romaji) 
