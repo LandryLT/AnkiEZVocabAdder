@@ -90,10 +90,11 @@ class VocabScrapper():
         print(grey(italic(f"Downloading {len(all_kanji_rez)} kanji strokes images")))
         img_download_cors = [k.downloadImage() for k in all_kanji_rez]
         with tqdm(total=len(img_download_cors),  bar_format=tqdm_bar_format+grey(' [{n_fmt}/{total_fmt}]')) as pbar:
-            chunks = 5
+            chunks = 10
             for i in range(math.ceil(len(img_download_cors)/chunks)):
-                await asyncio.gather(*img_download_cors[i*chunks:i*chunks+chunks])
-                pbar.update(chunks)
+                new_chunk = img_download_cors[i*chunks:i*chunks+chunks]
+                await asyncio.gather(*new_chunk)
+                pbar.update(len(new_chunk))
         return all_kanji_rez
 
     async def __aenter__(self):

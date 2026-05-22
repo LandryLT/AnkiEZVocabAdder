@@ -92,8 +92,9 @@ class JishoScrapper(Scrapper):
             with tqdm(total=len(download_cors),  bar_format=tqdm_bar_format) as pbar:
                 chunks = 10
                 for i in range(math.ceil(len(download_cors)/chunks)):
-                    await asyncio.gather(*download_cors[i*chunks:i*chunks+chunks])
-                    pbar.update(chunks)
+                    new_chunk = download_cors[i*chunks:i*chunks+chunks]
+                    await asyncio.gather(*new_chunk)
+                    pbar.update(len(new_chunk))
                 # await tqdm.gather(*download_cors, bar_format=tqdm_bar_format)
             return selected_expr
         
