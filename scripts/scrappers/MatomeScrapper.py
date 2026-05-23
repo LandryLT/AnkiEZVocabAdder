@@ -29,7 +29,7 @@ class MatomeScrapper(Scrapper):
         await self.page.goto(self._matomesearch(level, page_num))
         await self.page.wait_for_function("() => document.querySelector('#top span + button') != null", timeout=2000)
         max_pages = await self.page.evaluate("() => parseInt(document.querySelector('#top span + button').textContent)")
-        with tqdm(total=max_pages+1, bar_format=tqdm_bar_format+grey(' [{n_fmt}/{total_fmt}]')) as pbar:
+        with tqdm(total=max_pages+1, bar_format=tqdm_bar_format) as pbar:
             while True:
                 if page_num > 1: 
                     await self.page.goto(self._matomesearch(level, page_num))

@@ -18,10 +18,10 @@ class KanjiScrapper(Scrapper):
 
     @cacheable(kanji_page_cache)
     async def jishoKanjiSearch(self, kanji:str, header: str):
-        if kanji in kanji_page_cache.cache.keys():
-            return kanji_page_cache.cache[kanji][0]
         clearConsole()
         print(header)
+        if kanji in kanji_page_cache.cache.keys():
+            return kanji_page_cache.cache[kanji][0]
         print(italic(grey(f'Loading kanji from jisho.org...\n')))
         await self.page.goto(self._jishokanjisearch(kanji))
         dict_rez = await self.page.evaluate("""() => {

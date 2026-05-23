@@ -30,7 +30,7 @@ class JishoJLPTScrapper(Scrapper):
         await self.page.goto(self._jishoJLPTsearch(level, page_num))
         await self.page.wait_for_function("() => document.querySelector('.result_count') != null", timeout=2000)
         max_rez = await self.page.evaluate("() => parseInt(document.querySelector('.result_count').innerText.match(/\d+/)[0])")
-        with tqdm(total=max_rez, bar_format=tqdm_bar_format+grey(' [{n_fmt}/{total_fmt}]')) as pbar:
+        with tqdm(total=max_rez, bar_format=tqdm_bar_format) as pbar:
             while True:
                 if page_num > 1: 
                     await self.page.goto(self._jishoJLPTsearch(level, page_num))

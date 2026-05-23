@@ -9,6 +9,7 @@ from scripts.utils.utils import list_duplicates
 import math
 import asyncio
 import re
+from urllib3.exceptions import ReadTimeoutError
 VocabScraperResult = NamedTuple('VocabScraperResult', [('jisho', JishoResult), ('neocities', list[NeocitiesResult])])
 
 class VocabScrapper():
@@ -83,18 +84,24 @@ class VocabScrapper():
     async def searchForKanjis(self, kanjis: list[str]):
         all_kanji_rez: list[KanjiResult] = []
         for i, k in enumerate(kanjis):
-            clearConsole()
             header = f'[{bold(k)}] ' + grey(f'({i}/{len(kanjis)} kanjis)') + "\n"
             all_kanji_rez.append(await self.jisho_kanji.jishoKanjiSearch(k, header))
         clearConsole()
-        print(grey(italic(f"Downloading {len(all_kanji_rez)} kanji strokes images")))
-        img_download_cors = [k.downloadImage() for k in all_kanji_rez]
-        with tqdm(total=len(img_download_cors),  bar_format=tqdm_bar_format+grey(' [{n_fmt}/{total_fmt}]')) as pbar:
-            chunks = 10
-            for i in range(math.ceil(len(img_download_cors)/chunks)):
-                new_chunk = img_download_cors[i*chunks:i*chunks+chunks]
-                await asyncio.gather(*new_chunk)
-                pbar.update(len(new_chunk))
+        while True:
+            try:
+                print(grey(italic(f"Downloading {len(all_kanji_rez)} kanji strokes images")))
+                img_download_cors = [k.downloadImage() for k in all_kanji_rez]
+                with tqdm(total=len(img_download_cors),  bar_format=tqdm_bar_format) as pbar:
+                    chunks = 5
+                    for i in range(math.ceil(len(img_download_cors)/chunks)):
+                        new_chunk = img_download_cors[i*chunks:i*chunks+chunks]
+                        await asyncio.gather(*new_chunk)
+                        pbar.update(len(new_chunk))
+                    break
+            except (TimeoutError, ReadTimeoutError):
+                clearConsole()
+                print("kanji.sljfaq stopped responding, trying again...")
+                continue
         return all_kanji_rez
 
     async def __aenter__(self):

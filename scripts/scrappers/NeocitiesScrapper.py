@@ -161,8 +161,8 @@ class NeocitiesScrapper(Scrapper):
         print(italic(grey(f'Downloading audio for {len(flat_sentences)} sentences from sentencesearch.neocities.org...')))
         download_cors = [self._downloadSound(s) for s in flat_sentences]
         flat_sentences: list[NeocitiesResult] = []
-        with tqdm(total=len(download_cors),  bar_format=tqdm_bar_format+grey(' [{n_fmt}/{total_fmt}]')) as pbar:
-            chunks = 10
+        with tqdm(total=len(download_cors),  bar_format=tqdm_bar_format) as pbar:
+            chunks = 20
             for i in range(math.ceil(len(download_cors)/chunks)):
                 new_chunk = download_cors[i*chunks:i*chunks+chunks]
                 flat_sentences.extend(await asyncio.gather(*new_chunk))
@@ -201,7 +201,7 @@ class NeocitiesScrapper(Scrapper):
         previous_count = 0
         total_rez = int(await self.page.evaluate("() => {return document.querySelector('#num-results').innerText}"))
         print(grey(f'Gathering {total_rez} sentences from {italic("sentencesearch.neocities.org...")}'))
-        with tqdm(total=total_rez, bar_format=tqdm_bar_format+grey(' [{n_fmt}/{total_fmt}]')) as pbar:
+        with tqdm(total=total_rez, bar_format=tqdm_bar_format) as pbar:
             while True:
                 current_count = await self.page.evaluate("() => {return document.querySelectorAll('#search-results-list .search-result').length}")
                 pbar.update(current_count - previous_count)

@@ -90,7 +90,7 @@ class JishoScrapper(Scrapper):
             print(grey(italic(f'Downloading {len(expr_with_links_to_download)} audio files...\n')))
             download_cors = [e.downloadSound(cache_on_append_result) for e in expr_with_links_to_download]
             with tqdm(total=len(download_cors),  bar_format=tqdm_bar_format) as pbar:
-                chunks = 10
+                chunks = 20
                 for i in range(math.ceil(len(download_cors)/chunks)):
                     new_chunk = download_cors[i*chunks:i*chunks+chunks]
                     await asyncio.gather(*new_chunk)

@@ -12,4 +12,4 @@ def clearConsole():
     if not global_no_clear:
         os.system('cls' if os.name == 'nt' else 'clear')
 
-tqdm_bar_format = grey('{desc}: {percentage:3.0f}%|{bar:20}|')
+tqdm_bar_format = grey('{desc}: {percentage:3.0f}%|{bar:20}|') + grey(' [{n_fmt}/{total_fmt}]')
