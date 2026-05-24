@@ -26,9 +26,9 @@
     --even-mean-bg: #272727;
     --odd-mean-bg: #171717;
     --expr-color: #ffffff;
-	--kanji-filter: brightness(1.5) contrast(1.5);
---button-shadow: 0 0.5em 0.8em 0 rgba(50, 50, 50, 0.3);
---bw: black;
+	--kanji-filter: invert(1) brightness(1.2) contrast(1.5);
+	--button-shadow: 0 0.5em 0.8em 0 rgba(50, 50, 50, 0.3);
+	--bw: black;
 }
 
 button {

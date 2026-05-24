@@ -1,5 +1,5 @@
 <div id="main_container_front">
-    <audio id="word_audio" src="{{Audio}}" preload="none"></audio>
+    <div id="word_audio">{{Audio}}</div>
     <div>
         <button id="front_expr_button" class="button"><span id="front_expr">{{Expression}}</span></button>
     </div>
@@ -24,7 +24,7 @@
         }
     
         function play_audio() {
-            document.getElementById("word_audio").play();
+            document.querySelector("#word_audio > audio").play();
         }
         
         function revealFurigana() {
@@ -53,7 +53,7 @@
         function hasAudio(){
             const expr_button = document.getElementById("front_expr_button")
             expr_button.classList.remove("noAudio");
-            const audio_source = document.getElementById("word_audio").getAttribute("src")
+            const audio_source = document.querySelector("#word_audio > audio").getAttribute("src")
             if (audio_source == "%22%22"){
                 expr_button.disabled = true;
                 expr_button.classList.add("noAudio");
