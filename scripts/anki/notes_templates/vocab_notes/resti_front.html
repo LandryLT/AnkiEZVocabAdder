@@ -24,7 +24,10 @@
         }
     
         function play_audio() {
-            document.querySelector("#word_audio > audio").play();
+            const audio_container = document.querySelector("#word_audio > audio")
+            if (audio_container){
+                audio_container.play();
+            }
         }
         
         function revealFurigana() {
@@ -53,8 +56,8 @@
         function hasAudio(){
             const expr_button = document.getElementById("front_expr_button")
             expr_button.classList.remove("noAudio");
-            const audio_source = document.querySelector("#word_audio > audio").getAttribute("src")
-            if (audio_source == "%22%22"){
+            const audio_container = document.querySelector("#word_audio > audio")
+            if (audio_container === null){
                 expr_button.disabled = true;
                 expr_button.classList.add("noAudio");
             }
