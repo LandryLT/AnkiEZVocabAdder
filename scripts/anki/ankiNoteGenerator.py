@@ -15,9 +15,10 @@ class AnkiNoteGen():
         self.col.add_note(note, deck["id"])
 
     def addAudio(self, filepath:str) -> str:
+
         if filepath and Path(filepath).is_file():
             return f'<audio class="sentence_audio" src="{self.col.media.add_file(filepath)}" preload="none"></audio>'
-        return '<audio class="sentence_audio" src="" preload="none"></audio>'
+        return ''
     
     def addImage(self, filepath:str) -> str:
         if filepath and Path(filepath).is_file():

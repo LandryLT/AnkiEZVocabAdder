@@ -15,6 +15,7 @@ from tqdm import tqdm
 from scripts.utils.printingUtils import tqdm_bar_format
 from requests.exceptions import ConnectTimeout
 from urllib3.exceptions import ReadTimeoutError
+from requests.exceptions import ReadTimeout
 from anki.errors import NotFoundError
 
 vocab_filepath = "./vocab2add.txt"
@@ -129,7 +130,7 @@ async def main():
                                 print(grey(f"またね"))
                             input(f"Press {italic('Enter')} to exit")
                             return
-                        except (ConnectTimeout, ReadTimeoutError, TimeoutError) as e:
+                        except (ConnectTimeout, ReadTimeoutError, TimeoutError, ReadTimeout) as e:
                             clearConsole()
                             print(f"{bold('ERROR')}: There seems to be a problem with the connection")
                             input(grey(f"Press ") + italic('Enter') + grey(" to see error : "))

@@ -10,6 +10,7 @@ import math
 import asyncio
 import re
 from urllib3.exceptions import ReadTimeoutError
+from requests.exceptions import ReadTimeout
 VocabScraperResult = NamedTuple('VocabScraperResult', [('jisho', JishoResult), ('neocities', list[NeocitiesResult])])
 
 class VocabScrapper():
@@ -98,7 +99,7 @@ class VocabScrapper():
                         await asyncio.gather(*new_chunk)
                         pbar.update(len(new_chunk))
                     break
-            except (TimeoutError, ReadTimeoutError):
+            except (TimeoutError, ReadTimeoutError, ReadTimeout):
                 clearConsole()
                 print("kanji.sljfaq stopped responding, trying again...")
                 continue
