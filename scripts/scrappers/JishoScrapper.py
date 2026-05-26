@@ -1,5 +1,4 @@
 from scripts.utils.printingUtils import bold, italic, grey, clearConsole, tqdm_bar_format
-from enum import Enum
 from scripts.scrappers.JishoSearchResult import JishoResult, JishoSearchResultRaw, word_audio_folder
 from scripts.scrappers.Scrapper import Scrapper, oopsable, cacheable
 from scripts.scrappers.JishoSelectMode import JishoSelectMode

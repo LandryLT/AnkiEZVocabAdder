@@ -1,4 +1,4 @@
-from scripts.scrappers.Scrapper import Scrapper, oopsable
+from scripts.scrappers.Scrapper import Scrapper
 from scripts.utils.printingUtils import clearConsole, italic, grey, bold, tqdm_bar_format
 import re
 from tqdm import tqdm

@@ -51,6 +51,7 @@ This file is where you list the terms to search :
 かんじ
 manabu
 ```
+Note that if you leave this file empty, you can bulk download vocabulary in JLPT parts 
 
 ## 4 - **AnkiEZVocabAdder.bat** - scrap it
 With everything ready, you can launch *AnkiEZVocabAdder.bat*, lay back, relax and let your brand new cards get generated for you.

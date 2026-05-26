@@ -3,9 +3,6 @@ import os
 from scripts.scrappers import VocabScrapper, Scrapper
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.CRITICAL)
-from scripts.scrappers.JishoSearchResult import word_audio_folder
-from scripts.scrappers.NeocitiesScrapper import sentence_audio_folder
-from scripts.scrappers.KanjiResults import image_folder
 from scripts.utils.scrapperConfigParser import scrapperConfigParser
 from scripts.anki.ankifier import Ankifier
 from scripts.utils.printingUtils import clearConsole, bold, italic, grey
@@ -71,6 +68,7 @@ async def main():
                             with open(vocab_filepath, "w", encoding="utf-8") as f:
                                 f.write("\n".join(vocab_list))
                             raise JLPTSearch
+                        vocab_list = list(set(vocab_list))
                         vocab_results = await scrapper.searchVocabList(vocab_list=vocab_list, **scrapperConfig)
                         try:
                             while True:
@@ -88,7 +86,7 @@ async def main():
                                     break
                                 except NotFoundError as e:
                                     await ankifier.checkAnkiIntegrity()
-                                    raise e
+                                    input(bold("ERROR: ") + "Anki's database was in an unstable state, this script will restart and use cached data. Press " + italic("Enter") + " to continue.")
                                     continue
                             
                             

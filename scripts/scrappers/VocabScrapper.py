@@ -5,7 +5,6 @@ from playwright.async_api import async_playwright
 from typing import NamedTuple
 import random
 from tqdm import tqdm
-from scripts.utils.utils import list_duplicates
 import math
 import asyncio
 import re

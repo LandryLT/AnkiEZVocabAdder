@@ -1,6 +1,5 @@
 import logging
 from scripts.utils.printingUtils import clearConsole, grey, bold, italic
-from scripts.scrappers.VocabScrapper import VocabScraperResult
 from scripts.scrappers.JishoSearchResult import JishoResult
 from scripts.anki.ankiModelGenerator import AnkiModelGen
 from scripts.anki.ankiDeckGenerator import AnkiDeckGen
@@ -9,7 +8,6 @@ from scripts.anki.ankiVocabNoteGenerator import AnkiVocabNoteGen
 from anki.storage import Collection
 from anki.notes import Note
 from anki.errors import DBError
-from scripts.utils.utils import list_duplicates
 from datetime import datetime
 import math
 from pathlib import Path
