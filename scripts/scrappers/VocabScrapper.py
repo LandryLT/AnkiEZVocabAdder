@@ -95,7 +95,10 @@ class VocabScrapper():
                     chunks = 5
                     for i in range(math.ceil(len(img_download_cors)/chunks)):
                         new_chunk = img_download_cors[i*chunks:i*chunks+chunks]
-                        await asyncio.gather(*new_chunk, return_exceptions=True)
+                        returned_chunk = await asyncio.gather(*new_chunk, return_exceptions=True)
+                        for c in returned_chunk:
+                            if issubclass(c, Exception):
+                                raise c
                         pbar.update(len(new_chunk))
                     break
             except (TimeoutError, ReadTimeoutError, ReadTimeout):
