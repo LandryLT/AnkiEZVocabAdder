@@ -1,0 +1,100 @@
+#_General____________________________________________________
+
+# [1-...] #
+max_results_displayed=20
+
+
+#_Caching____________________________________________________
+
+# NONE, YES, NO #
+use_cache=NO
+
+# NONE, YES, NO #
+clear_cache_on_complete=NO
+
+# NONE, YES, NO #
+clear_vocab2add_complete=NO
+
+
+#_Expressions________________________________________________
+
+# NONE, [1-...], SELECT, ALL #
+result_autoselect=1
+
+# NONE, [0-5] #
+jlpt_filter=0
+
+# NONE, YES, NO #
+exact_match_autoselect=NO
+
+# NONE, [1-...], SELECT, ALL #
+meaning_autoselect=ALL
+
+
+#_Audio______________________________________________________
+
+# YES, NO #
+word_audio_download=YES
+
+# NONE, YES, NO #
+word_audio_auto_download=YES
+
+# NONE, YES, NO #
+download_sentence_audio=YES
+
+
+#_Sentences__________________________________________________
+
+# NONE, AUTO, MANUAL #
+sentence_select_mode=AUTO
+
+# NONE, YES, NO #
+auto_validate_random=YES
+
+# NONE, [0-20] #
+sentence_quantity=20
+
+# NONE, [0-...] #
+sentence_min_length=0
+
+# NONE, [0-...] #
+sentence_max_length=9999999
+
+# NONE, EVEN, RANDOM #
+sentence_len_distribution=EVEN
+
+
+#_Anki_______________________________________________________
+
+# NONE, [path to anki collection] #
+anki_collection_file_path=NONE
+
+# NONE, NEWEST, OLDEST, UPDATE, SELECT #
+deduplication_select_mode=UPDATE
+
+# [0-...], NONE #
+show_furigna_timeout=5
+
+# [0-...], NONE #
+show_sentence_timeout=5
+
+# [0-...], NONE #
+show_resti_read_timeout=5
+
+# [0-...], NONE #
+show_expre_read_timeout=5
+
+# [1-...] #
+min_show_meanings=3
+
+# [1-...] #
+min_show_sentences=5
+
+# [1-...] #
+vocab_max_kanji_meanings=3
+
+# [1-...] #
+min_show_compounds=2
+
+# [1-...] #
+min_show_compound_meanings=3

@@ -15,6 +15,8 @@ mkdir .\caches\images
 mkdir .\caches\kanjis
 python -m venv .venv
 copy NUL vocab2add.txt
+copy .\installer\searchConfig_templ.txt .\searchConfig.txt
+copy .\installer\JLPsearchConfig_templ.txt .\scripts\scrappers\JLPTsearchConfig.txt
 call .\.venv\Scripts\activate
 pip install -r requirements.txt
 playwright install
