@@ -271,7 +271,7 @@ class Ankifier():
         
     @staticmethod
     def writeColPathInConfigFile(colpath: Path, config_file: Path):
-        for conf_file in conf_file:
+        for conf_file in config_file:
             with open(conf_file, 'r') as f:
                 lines = f.read()
             lines = re.sub(r'(?m:(?<=^anki_collection_file_path=).*$)', colpath.as_posix(), lines)
