@@ -158,15 +158,15 @@ async def main():
             clearConsole()
             input(f"{bold('ERROR')}: Anki seems to be already running, please close the Anki app and press {italic('Enter')} to resume")
             continue
-        # except Exception as e:
-        #     clearConsole()
-        #     if hasattr(e, 'message'):
-        #         print(e.message)
-        #     else:
-        #         print(e)
-        #     print("\n" + grey(f"Data is cached, you can pick up where you left next time"))
-        #     input(f"Press {italic('Enter')} to exit")
-        #     return
+        except Exception as e:
+            clearConsole()
+            if hasattr(e, 'message'):
+                print(e.message)
+            else:
+                print(e)
+            print("\n" + grey(f"Data is cached, you can pick up where you left next time"))
+            input(f"Press {italic('Enter')} to exit")
+            return
                 
 if __name__ == "__main__":
     asyncio.run(main())
