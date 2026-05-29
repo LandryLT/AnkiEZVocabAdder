@@ -14,7 +14,7 @@ def parseFurigana(expression, kanjis, furiganas):
     for c in expression:
         if c in kanjis and furiganas:
             output += furiganas.pop(0)
-        else:
+        elif re.match(r'[ぁ-んァ-ン]', c):
             output += c
     return output
 
