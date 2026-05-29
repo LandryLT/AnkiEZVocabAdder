@@ -1,9 +1,9 @@
 from importlib.resources import files
-from importlib.abc import Traversable
+# from importlib.resources.abc import Traversable
 
 
 templates = files("scripts").joinpath("anki", "notes_templates")
-assert isinstance(templates, Traversable)
+# assert isinstance(templates, Traversable)
 kanji = templates.joinpath("kanji_notes")
 vocab = templates.joinpath("vocab_notes")
 
