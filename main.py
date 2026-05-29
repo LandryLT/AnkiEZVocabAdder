@@ -14,6 +14,8 @@ from requests.exceptions import ConnectTimeout
 from urllib3.exceptions import ReadTimeoutError
 from requests.exceptions import ReadTimeout
 from anki.errors import NotFoundError
+import sys 
+sys.stdout.reconfigure(encoding='utf-8')
 
 vocab_filepath = "./vocab2add.txt"
 scrapperConfig_filepath = "./searchConfig.txt"
