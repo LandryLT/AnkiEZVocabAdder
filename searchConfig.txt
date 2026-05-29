@@ -87,22 +87,22 @@ max_results_displayed=20
 use_cache=YES
 
 # NONE, YES, NO #
-clear_cache_on_complete=NO
+clear_cache_on_complete=YES
 
 # NONE, YES, NO #
-clear_vocab2add_complete=NO
+clear_vocab2add_complete=YES
 
 
 #_Expressions________________________________________________
 
 # NONE, [1-...], SELECT, ALL #
-result_autoselect=1
+result_autoselect=SELECT
 
 # NONE, [0-5] #
-jlpt_filter=0
+jlpt_filter=2
 
 # NONE, YES, NO #
-exact_match_autoselect=NONE
+exact_match_autoselect=NO
 
 # NONE, [1-...], SELECT, ALL #
 meaning_autoselect=ALL
@@ -126,16 +126,16 @@ download_sentence_audio=YES
 sentence_select_mode=AUTO
 
 # NONE, YES, NO #
-auto_validate_random=YES
+auto_validate_random=NO
 
 # NONE, [0-20] #
-sentence_quantity=20
+sentence_quantity=5
 
 # NONE, [0-...] #
 sentence_min_length=0
 
 # NONE, [0-...] #
-sentence_max_length=9999999
+sentence_max_length=10
 
 # NONE, EVEN, RANDOM #
 sentence_len_distribution=RANDOM
@@ -150,28 +150,28 @@ anki_collection_file_path=NONE
 deduplication_select_mode=UPDATE
 
 # [0-...], NONE #
-show_furigna_timeout=5
+show_furigna_timeout=0
 
 # [0-...], NONE #
-show_sentence_timeout=5
+show_sentence_timeout=0
 
 # [0-...], NONE #
-show_resti_read_timeout=5
+show_resti_read_timeout=0
 
 # [0-...], NONE #
-show_expre_read_timeout=5
+show_expre_read_timeout=0
 
 # [1-...] #
-min_show_meanings=3
+min_show_meanings=1
 
 # [1-...] #
-min_show_sentences=3
+min_show_sentences=5
 
 # [1-...] #
 vocab_max_kanji_meanings=3
 
 # [1-...] #
-min_show_compounds=1
+min_show_compounds=2
 
 # [1-...] #
 min_show_compound_meanings=3

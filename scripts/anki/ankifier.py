@@ -265,8 +265,8 @@ class Ankifier():
             response = re.match(r'\d+', input(grey(": ")))
             if response and int(response.group(0)) < len(data_bases.keys()):
                 output = list(data_bases.values())[int(response.group(0))]
-                for file in config_files:
-                    self.writeColPathInConfigFile(output, file)
+                self.writeColPathInConfigFile(output, config_files)
+                # for file in config_files:
                 return output
         
     @staticmethod
