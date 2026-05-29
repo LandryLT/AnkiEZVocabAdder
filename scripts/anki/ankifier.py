@@ -271,11 +271,12 @@ class Ankifier():
         
     @staticmethod
     def writeColPathInConfigFile(colpath: Path, config_file: Path):
-        with open(config_file, 'r') as f:
-            lines = f.read()
-        lines = re.sub(r'(?m:(?<=^anki_collection_file_path=).*$)', colpath.as_posix(), lines)
-        with open(config_file, 'w') as f:
-            f.write(lines)  
+        for conf_file in conf_file:
+            with open(conf_file, 'r') as f:
+                lines = f.read()
+            lines = re.sub(r'(?m:(?<=^anki_collection_file_path=).*$)', colpath.as_posix(), lines)
+            with open(conf_file, 'w') as f:
+                f.write(lines)  
 
     class ColNotFound(Exception):
         def __init__(self, *args):
