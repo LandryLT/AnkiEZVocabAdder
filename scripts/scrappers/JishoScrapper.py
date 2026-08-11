@@ -155,6 +155,7 @@ class JishoScrapper(Scrapper):
         print(header)
         print(italic(grey(f'Loading from jisho.org...\n')))
         await self.page.goto(self._jishosearch(search_term))
+        
         dict_rez = await self.page.evaluate("""() => {
                                                 function getDomPath(el) {
                                                     if (!(el instanceof Element)) return null;
@@ -196,16 +197,33 @@ class JishoScrapper(Scrapper):
                                                     expression: el.querySelector('.text')?.innerText ?? '',
                                                     furiganas: [...el.querySelectorAll('.furigana .kanji')].map(x => x.innerText),
                                                     meanings: (() => {
-                                                        const m = el.querySelector('.concept_light-meanings > .meanings-wrapper')
-                                                        const tags = [...m.querySelectorAll('.meaning-tags')].map(x => x.innerText)
-                                                        const meanings = [...m.querySelectorAll('.meaning-meaning')].map(x => x.innerText)
-                                                        const supplemental_infos = [...m.querySelectorAll('.meaning-wrapper')].map(x => [...x.querySelectorAll('.supplemental_info > span.tag-tag')].map(y => y.innerText))
+                                                        const m = el.querySelector('.concept_light-meanings > .meanings-wrapper');
+                                                        var tags = []
+                                                        var meanings = []
+                                                        var supplemental_infos = []
+                                                        var was_tag = false;
+                                                        el.querySelectorAll('.concept_light-meanings > .meanings-wrapper > div').forEach((x) => {
+                                                            const is_tag = x.classList.contains("meaning-tags");
+                                                            const is_meaning = x.classList.contains("meaning-wrapper") ;
+                                                            if (is_tag){
+                                                                tags.push(x.innerText);
+                                                            } else {
+                                                                if (!was_tag){
+                                                                    tags.push(null);
+                                                                }
+                                                                meanings.push(x.querySelector('.meaning-meaning')?.innerText)
+                                                                supplemental_infos.push([...x.querySelectorAll('.supplemental_info > span.tag-tag')].map(y => y.innerText))
+                                                            }
+                                                            was_tag = is_tag
+                                                        })
+
                                                         const output = meanings.map((x, i) => ({
                                                             tag: tags[i],
-                                                            meaning: meanings[i],
+                                                            meaning: x,
                                                             supplemental_info: supplemental_infos[i],
                                                         }))
                                                         return output.filter(x => (x["tag"] != "Notes" && x["tag"] != "Other forms"))
+
                                                     })(),
                                                     tags: [...el.querySelectorAll('.concept_light-tag')].map(x => x.innerText),
                                                     soundlink: el.querySelector('source[type="audio/mpeg"]')?.src ?? null,
